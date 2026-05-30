@@ -29,7 +29,7 @@
 
 		<div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900">
 			<h2 class="mb-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100">Why build all this for a counter?</h2>
-			<p>Mostly for fun, and to see how far the joke would go. There is a full OAuth2 server, sign in with Google and Microsoft, teams, 20 SDKs, a Postgres extension, 20 languages, and three test suites. All of it just to return <code>i++</code> in a nicer wrapper. If you like this kind of thing, I am <a class="text-indigo-600 dark:text-indigo-400" href="https://linkedin.com/in/jtwebman" target="_blank" rel="noopener">on LinkedIn</a>.</p>
+			<p>Mostly for fun, and to see how far the joke would go. There is a full OAuth2 server, sign in with Google and Microsoft, teams, 20 SDKs, a Postgres extension, 20 languages, and three test suites. All of it just to return <code>i++</code> in a nicer wrapper. If you like this kind of thing, <a class="text-indigo-600 dark:text-indigo-400" href="https://bio.jtwebman.com" target="_blank" rel="noopener">follow me on my socials</a>.</p>
 		</div>
 	</div>
 
