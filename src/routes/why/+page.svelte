@@ -24,7 +24,7 @@
 
 		<div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900">
 			<h2 class="mb-2 text-xl font-semibold text-zinc-900 dark:text-zinc-100">It can decode itself</h2>
-			<p>The cipher also runs backwards. So <code>GET /api/v1/ordinal/&lt;id&gt;</code> turns any PUID back into its counter value. That proves the id <code>64qAN39Gj...</code> was really just #1. It also means that if you subtract two ids, you can tell how many we have handed out. So no, do not use this in production.</p>
+			<p>The cipher also runs backwards. So <code>GET /api/v1/ordinal/&lt;id&gt;</code> turns any PUID back into its counter value. That proves the id <code>64qAN39Gj...</code> was really just #1. It also means anyone can decode an id and read its number, and that number is how many ids we had handed out when it was made. So decode your newest id and you know our exact total. So no, do not use this in production.</p>
 		</div>
 
 		<div class="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900">
