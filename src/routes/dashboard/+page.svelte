@@ -1,0 +1,155 @@
+<script>
+	import { page } from '$app/state';
+	import { onMount } from 'svelte';
+	const m = $derived(page.data.m);
+
+	let loaded = $state(false);
+	let loggedIn = $state(false);
+	let email = $state('');
+	let accounts = $state([]);
+	let activeId = $state('');
+	let role = $state('member');
+	let apiKey = $state(null);
+	let n = $state(3);
+	let ids = $state([]);
+	let ordinals = $state([]);
+	let genErr = $state('');
+	let joinCode = $state(null);
+	let members = $state([]);
+	let usage = $state(null);
+
+	const api = (p, o) => fetch('/api' + p, { credentials: 'same-origin', ...o });
+	const post = (p, body) => api(p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) });
+
+	async function load() {
+		const me = await api('/me');
+		loaded = true;
+		if (me.status !== 200) { loggedIn = false; return; }
+		loggedIn = true;
+		const u = await me.json();
+		email = u.email || u.user_id;
+		const a = await (await api('/accounts')).json();
+		accounts = a.accounts || [];
+		activeId = a.active_account_id;
+		await loadTeam();
+		await loadMembers();
+		await loadUsage();
+	}
+	async function loadTeam() { const r = await (await api('/team/settings')).json(); role = r.role; joinCode = r.join_code; }
+	async function loadMembers() { const r = await (await api('/team/members')).json(); members = r.members || []; }
+	async function loadUsage() { usage = await (await api('/usage')).json(); }
+	async function switchAccount(e) { await post('/account/switch', { account_id: e.currentTarget.value }); apiKey = null; await load(); }
+	async function createAccount() { const name = prompt('New account name?'); if (!name) return; await post('/account/create', { name }); await load(); }
+	async function mintKey() { const r = await (await post('/team/keys', {})).json(); apiKey = r.api_key; }
+	async function gen() {
+		if (!apiKey) { alert('Mint an API key first.'); return; }
+		genErr = '';
+		const res = await api('/v1/ids?n=' + n, { headers: { 'X-API-Key': apiKey } });
+		const b = await res.json();
+		if (res.status !== 200) { genErr = JSON.stringify(b); ids = []; ordinals = []; return; }
+		ids = b.ids; ordinals = [];
+		for (const id of b.ids) {
+			const o = await (await api('/v1/ordinal/' + id, { headers: { 'X-API-Key': apiKey } })).json();
+			ordinals = [...ordinals, { id, ordinal: o.ordinal }];
+		}
+	}
+	async function rotateCode() { const r = await (await post('/team/join-code/rotate', {})).json(); joinCode = r.join_code; }
+	async function revokeCode() { await post('/team/join-code/revoke', {}); joinCode = null; }
+
+	const joinLink = $derived(joinCode ? location.origin + '/join/' + joinCode : '');
+	const mailto = $derived(joinCode ? 'mailto:?subject=' + encodeURIComponent('Join my PUID team') + '&body=' + encodeURIComponent('Join my team on PUID. Sign in with Google or Microsoft, then you are in:\n' + joinLink) : '');
+	const maxDay = $derived(usage?.days?.length ? Math.max(...usage.days.map((d) => d.count)) : 0);
+
+	onMount(load);
+
+	const cardCls = 'rounded-2xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900';
+	const btn = 'inline-flex min-h-11 items-center rounded-xl border border-zinc-300 px-4 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800';
+	const btnPrimary = 'inline-flex min-h-11 items-center rounded-xl bg-indigo-600 px-4 font-semibold text-white hover:bg-indigo-500';
+</script>
+
+<main class="mx-auto max-w-3xl px-5">
+	<h1 class="py-8 text-3xl font-bold tracking-tight">{m.nav_dashboard}</h1>
+
+	{#if !loaded}
+		<p class="text-zinc-500 dark:text-zinc-400">…</p>
+	{:else if !loggedIn}
+		<div class={cardCls}>
+			<p>{m.signin_prompt}</p>
+			<div class="mt-4 flex flex-wrap gap-3">
+				<a href="/auth/login/google?next=/dashboard" class={btnPrimary}>{m.signin_google}</a>
+				<a href="/auth/login/microsoft?next=/dashboard" class={btn}>{m.signin_microsoft}</a>
+			</div>
+			<p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400">{m.no_password}</p>
+		</div>
+	{:else}
+		<div class="{cardCls} flex flex-wrap items-center justify-between gap-3">
+			<div>{m.nav_dashboard}: <b data-testid="email">{email}</b></div>
+			<div class="flex flex-wrap items-center gap-2">
+				{m.account}:
+				<select data-testid="account-select" value={activeId} onchange={switchAccount} class="rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 dark:border-zinc-700">
+					{#each accounts as a (a.id)}<option value={a.id}>{a.name} ({a.role})</option>{/each}
+				</select>
+				<button class={btn} data-testid="new-account-btn" onclick={createAccount}>{m.new_account}</button>
+			</div>
+		</div>
+
+		<div class="{cardCls} mt-4">
+			<h3 class="mb-2 font-semibold">{m.api_key}</h3>
+			<div class="flex flex-wrap items-center gap-3">
+				<button class={btnPrimary} data-testid="mint-btn" onclick={mintKey}>{m.mint_key}</button>
+				<span class="text-sm text-zinc-500 dark:text-zinc-400">{m.shown_once}</span>
+			</div>
+			{#if apiKey}<pre data-testid="key-out" class="mt-3 overflow-auto rounded-lg bg-zinc-100 p-3 font-mono text-sm dark:bg-zinc-950">{apiKey}
+
+Save it — we hash it and cannot show it again.</pre>{/if}
+		</div>
+
+		<div class="{cardCls} mt-4">
+			<h3 class="mb-2 font-semibold">{m.generate_ids} <span class="text-sm font-normal text-zinc-500 dark:text-zinc-400">{m.one_per_sec}</span></h3>
+			<div class="flex flex-wrap items-center gap-3">
+				{m.how_many}
+				<input data-testid="n-input" type="number" min="1" max="10" bind:value={n} class="w-20 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 dark:border-zinc-700" />
+				<button class={btnPrimary} data-testid="gen-btn" onclick={gen}>{m.generate}</button>
+			</div>
+			{#if genErr}<pre class="mt-3 overflow-auto rounded-lg bg-zinc-100 p-3 font-mono text-sm text-red-600 dark:bg-zinc-950">{genErr}</pre>{/if}
+			{#if ids.length}<pre data-testid="ids-out" class="mt-3 overflow-auto rounded-lg bg-zinc-100 p-3 font-mono text-sm dark:bg-zinc-950">{ids.join('\n')}</pre>{/if}
+			{#if ordinals.length}<div data-testid="ordinals" class="mt-2 font-mono text-sm">{#each ordinals as o}<div>{o.id} → #{o.ordinal}</div>{/each}</div>{/if}
+		</div>
+
+		<div class="{cardCls} mt-4">
+			<h3 class="mb-2 font-semibold">Usage <span class="text-sm font-normal text-zinc-500 dark:text-zinc-400">(last 30 days · total {usage?.total ?? 0})</span></h3>
+			{#if usage?.days?.length}
+				<div class="flex items-end gap-1" style="height:80px">
+					{#each usage.days as d}
+						<div class="flex-1 rounded-t bg-indigo-500/70" style="height:{maxDay ? Math.max(4, (d.count / maxDay) * 80) : 4}px" title={'#' + d.count}></div>
+					{/each}
+				</div>
+			{:else}<p class="text-sm text-zinc-500 dark:text-zinc-400">No ids generated yet.</p>{/if}
+		</div>
+
+		<div class="{cardCls} mt-4">
+			<h3 class="mb-2 font-semibold">{m.team}</h3>
+			{#if role === 'owner'}
+				<p class="text-sm text-zinc-500 dark:text-zinc-400">{m.join_intro}</p>
+				{#if joinCode}
+					<pre data-testid="join-link" class="mt-3 overflow-auto rounded-lg bg-zinc-100 p-3 font-mono text-sm dark:bg-zinc-950">Join code: {joinCode}
+Join link: {joinLink}</pre>
+					<div class="mt-3 flex flex-wrap gap-2">
+						<a href={mailto} data-testid="join-mailto" class={btnPrimary}>{m.share_email}</a>
+						<button class={btn} data-testid="rotate-btn" onclick={rotateCode}>{m.rotate}</button>
+						<button class={btn} data-testid="revoke-btn" onclick={revokeCode}>{m.revoke}</button>
+					</div>
+				{:else}
+					<p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">{m.joining_disabled}</p>
+					<button class="{btnPrimary} mt-2" data-testid="generate-btn" onclick={rotateCode}>{m.generate_code}</button>
+				{/if}
+			{:else}
+				<p class="text-sm text-zinc-500 dark:text-zinc-400">{m.owners_only}</p>
+			{/if}
+			<h4 class="mt-4 mb-1 text-sm text-zinc-500 dark:text-zinc-400">{m.members}</h4>
+			<table class="w-full text-sm" data-testid="members">
+				<tbody>{#each members as mem (mem.user_id)}<tr class="border-b border-zinc-200 dark:border-zinc-800"><td class="py-1.5">{mem.email || mem.user_id}</td><td class="text-zinc-500 dark:text-zinc-400">{mem.role}</td></tr>{/each}</tbody>
+			</table>
+		</div>
+	{/if}
+</main>

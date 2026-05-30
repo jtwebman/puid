@@ -122,3 +122,9 @@ export function pickLocale(request, url) {
 export function t(locale, key) {
   return (M[locale] && M[locale][key]) ?? M.en[key] ?? key;
 }
+
+// Full message map for a locale (overrides merged over the English base), so
+// Svelte components can do `m.key` with graceful English fallback.
+export function messagesFor(locale) {
+  return { ...M.en, ...(M[locale] || {}) };
+}

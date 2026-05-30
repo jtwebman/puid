@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "puid",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".svelte-kit/cloudflare"
+  },
+  "observability": { "enabled": true },
+
+  // D1 holds everything relational + the counter + usage_events.
+  // Create with: wrangler d1 create puid  → paste database_id here.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "puid",
+      "database_id": "REPLACE_WITH_ID_FROM_wrangler_d1_create"
+    }
+  ]
+
+  // Custom domain (set up tomorrow once puid.dev nameservers are on Cloudflare):
+  // "routes": [{ "pattern": "puid.dev", "custom_domain": true }]
+
+  // Inbound social-login secrets (wrangler secret put):
+  //   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET
+}
