@@ -25,6 +25,14 @@ test("openapi doc is served with a runtime base url (works locally)", async ({ r
   // server url is the runtime origin, not hardcoded prod — so Try-it-out works here
   expect(spec.servers[0].url).toMatch(/^http:\/\/localhost:8799\/api$/);
   expect(Object.keys(spec.paths)).toEqual(["/v1/ids", "/v1/ordinal/{puid}", "/v1/quota"]);
+  // API key OR an OAuth2 token (third-party apps generating ids on your behalf)
+  expect(Object.keys(spec.components.securitySchemes)).toEqual(["ApiKeyAuth", "OAuth2"]);
+  expect(spec.components.securitySchemes.OAuth2.flows.authorizationCode.tokenUrl).toContain("localhost:8799");
+});
+
+test("/v1/ordinal requires auth", async ({ request }) => {
+  const r = await request.get("/api/v1/ordinal/64qAN39GjJh5kbi4HROOxh");
+  expect(r.status()).toBe(401);
 });
 
 test("/v1/quota reports usage without spending an id (API key)", async ({ request }) => {

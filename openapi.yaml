@@ -17,6 +17,9 @@
 "security":
   -
     "ApiKeyAuth": []
+  -
+    "OAuth2":
+      - "puid:generate"
 "tags":
   -
     "name": "ids"
@@ -121,6 +124,22 @@
       "in": "header"
       "name": "X-API-Key"
       "description": "A team API key (puid_live_...). Mint one in the dashboard after signing in with Google or Microsoft."
+    "OAuth2":
+      "type": "oauth2"
+      "description": "Let a third-party app generate ids on a team's behalf, without ever handling the team's API key. The app registers a client, the user approves a scoped consent screen, and the app receives a bearer token."
+      "flows":
+        "authorizationCode":
+          "authorizationUrl": "https://puid.dev/oauth/authorize"
+          "tokenUrl": "https://puid.dev/api/oauth/token"
+          "refreshUrl": "https://puid.dev/api/oauth/token"
+          "scopes":
+            "puid:generate": "Generate ids"
+            "puid:ordinal": "Decode ids to ordinals"
+        "clientCredentials":
+          "tokenUrl": "https://puid.dev/api/oauth/token"
+          "scopes":
+            "puid:generate": "Generate ids"
+            "puid:ordinal": "Decode ids to ordinals"
   "schemas":
     "IdsResponse":
       "type": "object"

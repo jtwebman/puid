@@ -24,7 +24,9 @@ export const SPEC = {
     license: { name: "AGPL-3.0" },
   },
   servers: [{ url: DEFAULT_SITE + "/api", description: "API base (one request per second, per account)" }],
-  security: [{ ApiKeyAuth: [] }],
+  // Authenticate with your own API key, OR with an OAuth2 token a third-party app
+  // was granted to generate ids on your team's behalf (without your API key).
+  security: [{ ApiKeyAuth: [] }, { OAuth2: ["puid:generate"] }],
   tags: [{ name: "ids", description: "Get and decode identifiers" }],
   paths: {
     "/v1/ids": {
@@ -73,6 +75,14 @@ export const SPEC = {
   components: {
     securitySchemes: {
       ApiKeyAuth: { type: "apiKey", in: "header", name: "X-API-Key", description: "A team API key (puid_live_...). Mint one in the dashboard after signing in with Google or Microsoft." },
+      OAuth2: {
+        type: "oauth2",
+        description: "Let a third-party app generate ids on a team's behalf, without ever handling the team's API key. The app registers a client, the user approves a scoped consent screen, and the app receives a bearer token.",
+        flows: {
+          authorizationCode: { authorizationUrl: DEFAULT_SITE + "/oauth/authorize", tokenUrl: DEFAULT_SITE + "/api/oauth/token", refreshUrl: DEFAULT_SITE + "/api/oauth/token", scopes: { "puid:generate": "Generate ids", "puid:ordinal": "Decode ids to ordinals" } },
+          clientCredentials: { tokenUrl: DEFAULT_SITE + "/api/oauth/token", scopes: { "puid:generate": "Generate ids", "puid:ordinal": "Decode ids to ordinals" } },
+        },
+      },
     },
     schemas: {
       IdsResponse: { type: "object", required: ["ids", "count"], properties: { ids: { type: "array", items: { type: "string" } }, count: { type: "integer" }, quota: { type: "object", properties: { used: { type: "integer" }, limit: { type: "integer" } } }, warning: { type: "string" } } },
@@ -83,9 +93,22 @@ export const SPEC = {
   },
 };
 
-// Return the spec with servers[0].url rewritten to `${base}/api`.
+// Return the spec with servers[0].url AND the OAuth2 flow URLs rewritten to the
+// given base (site root). So "Try it out" — including the OAuth flow — works
+// against localhost in dev and the real host in prod.
 export function specWithBase(base) {
-  return { ...SPEC, servers: [{ url: base.replace(/\/$/, "") + "/api", description: SPEC.servers[0].description }] };
+  const root = base.replace(/\/$/, "");
+  const api = root + "/api";
+  const spec = (typeof structuredClone === "function" ? structuredClone(SPEC) : JSON.parse(JSON.stringify(SPEC)));
+  spec.servers = [{ url: api, description: SPEC.servers[0].description }];
+  const flows = spec.components?.securitySchemes?.OAuth2?.flows;
+  if (flows?.authorizationCode) {
+    flows.authorizationCode.authorizationUrl = root + "/oauth/authorize";
+    flows.authorizationCode.tokenUrl = api + "/oauth/token";
+    flows.authorizationCode.refreshUrl = api + "/oauth/token";
+  }
+  if (flows?.clientCredentials) flows.clientCredentials.tokenUrl = api + "/oauth/token";
+  return spec;
 }
 
 // Pure, always-valid YAML emitter (quotes every string + key). Shared by the

@@ -161,6 +161,8 @@ async function handleApi(request, env, origin, p, url) {
     return json({ ids, count: ids.length, quota: { used: q.data.used, limit: q.data.limit } });
   }
   if (p.startsWith("/v1/ordinal/")) {
+    const principal = await principalFromRequest(env, request);
+    if (!principal) return json({ error: "unauthorized", message: "Send X-API-Key or a Bearer token." }, 401);
     const puid = decodeURIComponent(p.split("/").pop());
     try { const ordinal = decodePuid(puid); return json({ puid, ordinal: ordinal.toString() }); }
     catch (e) { return json({ error: "bad_request", message: `Not a valid PUID: ${e.message}` }, 400); }
