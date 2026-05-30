@@ -3,7 +3,7 @@
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SPEC, toYaml } from "../src/openapi.js";
+import { SPEC, toYaml } from "../src/lib/openapi.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 writeFileSync(join(ROOT, "openapi.json"), JSON.stringify(SPEC, null, 2));

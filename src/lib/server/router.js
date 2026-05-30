@@ -201,6 +201,14 @@ async function handleApi(request, env, origin, p, url) {
     const { data } = await authCall(env, "list-usage", { account_id: s.active_account_id });
     return json(data);
   }
+  // test-only: seed today's usage so the quota (402) path is testable without
+  // making thousands of calls. Gated by ALLOW_DEV_LOGIN (never set in prod).
+  if (p === "/dev/seed-usage" && env.ALLOW_DEV_LOGIN === "1") {
+    const s = await needSession(); if (!s) return json({ error: "not_logged_in" }, 401);
+    const want = Number(url.searchParams.get("n") || "1000");
+    await env.DB.prepare("INSERT INTO usage_events (account_id, n, ts) VALUES (?1, ?2, ?3)").bind(s.active_account_id, want, Date.now()).run();
+    return json({ seeded: want });
+  }
   if (p === "/account/create" && request.method === "POST") {
     const s = await needSession(); if (!s) return json({ error: "not_logged_in" }, 401);
     const { data } = await authCall(env, "create-account", { user_id: s.user_id, name: (await request.json().catch(() => ({}))).name });

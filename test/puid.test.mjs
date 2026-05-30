@@ -1,5 +1,5 @@
 // Proof, not vibes. Run: node test/puid.test.mjs
-import { encodePuid, decodePuid, permute, unpermute, base62Encode, base62Decode } from "../src/puid.js";
+import { encodePuid, decodePuid, permute, unpermute, base62Encode, base62Decode } from "../src/lib/puid.js";
 
 let failures = 0;
 const check = (cond, msg) => { if (!cond) { console.error("  FAIL:", msg); failures++; } };
