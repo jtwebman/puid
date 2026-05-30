@@ -196,9 +196,25 @@ export async function dispatch(env, op, body = {}) {
       const member = await db.prepare("SELECT 1 FROM memberships WHERE account_id=?1 AND user_id=?2").bind(account_id, actor_user_id).first();
       if (!member) return err("forbidden", 403);
       const apiKey = rand("puid_live_", 24);
-      await db.prepare("INSERT INTO api_keys (key_hash,account_id,created_by,label,created) VALUES (?1,?2,?3,?4,?5)")
-        .bind(await sha256hex(apiKey), account_id, actor_user_id, label || "default", now()).run();
-      return ok({ api_key: apiKey, account_id, message: "Shown once. Hashed at rest. This is what the SDKs send." });
+      const id = rand("key_", 12);
+      const hint = apiKey.slice(-4);
+      await db.prepare("INSERT INTO api_keys (key_hash,id,account_id,created_by,label,hint,created) VALUES (?1,?2,?3,?4,?5,?6,?7)")
+        .bind(await sha256hex(apiKey), id, account_id, actor_user_id, label || "default", hint, now()).run();
+      return ok({ api_key: apiKey, id, hint, label: label || "default", account_id, message: "Shown once. Hashed at rest. This is what the SDKs send." });
+    }
+
+    case "list-keys": {
+      const { results } = await db.prepare(
+        "SELECT id, label, hint, created FROM api_keys WHERE account_id=?1 ORDER BY created DESC"
+      ).bind(body.account_id).all();
+      return ok({ keys: results });
+    }
+
+    case "revoke-key": {
+      const member = await db.prepare("SELECT 1 FROM memberships WHERE account_id=?1 AND user_id=?2").bind(body.account_id, body.actor_user_id).first();
+      if (!member) return err("forbidden", 403);
+      await db.prepare("DELETE FROM api_keys WHERE account_id=?1 AND id=?2").bind(body.account_id, body.key_id).run();
+      return ok({ revoked: body.key_id });
     }
 
     case "verify-key": {
@@ -245,20 +261,42 @@ export async function dispatch(env, op, body = {}) {
         await db.prepare("DELETE FROM oauth_codes WHERE code=?1").bind(body.code).run();
         if (rec.client_id !== body.client_id || rec.redirect_uri !== body.redirect_uri) return err("invalid_grant", 400);
         if (!(await pkceMatches(body.code_verifier, rec.code_challenge, rec.code_challenge_method))) return err("invalid_grant", 400, { detail: "PKCE failed" });
-        return mintTokens(db, rec.account_id, rec.scope, true);
+        // record the standing grant so the team can see/revoke this app later
+        await db.prepare("INSERT INTO oauth_grants (account_id,client_id,scope,created) VALUES (?1,?2,?3,?4) ON CONFLICT(account_id,client_id) DO UPDATE SET scope=?3")
+          .bind(rec.account_id, rec.client_id, rec.scope, now()).run();
+        return mintTokens(db, rec.account_id, rec.scope, true, rec.client_id);
       }
       if (g === "refresh_token") {
-        const rec = await db.prepare("SELECT account_id,scope FROM oauth_tokens WHERE token_hash=?1 AND kind='refresh'").bind(await sha256hex(body.refresh_token || "")).first();
+        const rec = await db.prepare("SELECT account_id,client_id,scope FROM oauth_tokens WHERE token_hash=?1 AND kind='refresh'").bind(await sha256hex(body.refresh_token || "")).first();
         if (!rec) return err("invalid_grant", 400);
-        return mintTokens(db, rec.account_id, rec.scope, true);
+        return mintTokens(db, rec.account_id, rec.scope, true, rec.client_id);
       }
       if (g === "client_credentials") {
         const client = await db.prepare("SELECT secret_hash FROM oauth_clients WHERE client_id=?1").bind(body.client_id || "").first();
         if (!client || client.secret_hash !== (await sha256hex(body.client_secret || ""))) return err("invalid_client", 401);
         const granted = (body.scope || SCOPES.join(" ")).split(/\s+/).filter((x) => SCOPES.includes(x)).join(" ");
-        return mintTokens(db, "client:" + body.client_id, granted, false);
+        return mintTokens(db, "client:" + body.client_id, granted, false, body.client_id);
       }
       return err("unsupported_grant_type", 400);
+    }
+
+    // ----- authorized apps (delegated OAuth grants on this account) -----
+    case "list-grants": {
+      const { results } = await db.prepare(
+        `SELECT g.client_id, g.scope, g.created, c.name FROM oauth_grants g
+         LEFT JOIN oauth_clients c ON c.client_id = g.client_id WHERE g.account_id=?1 ORDER BY g.created DESC`
+      ).bind(body.account_id).all();
+      return ok({ grants: results });
+    }
+
+    case "revoke-grant": {
+      const member = await db.prepare("SELECT 1 FROM memberships WHERE account_id=?1 AND user_id=?2").bind(body.account_id, body.actor_user_id).first();
+      if (!member) return err("forbidden", 403);
+      await db.batch([
+        db.prepare("DELETE FROM oauth_grants WHERE account_id=?1 AND client_id=?2").bind(body.account_id, body.client_id),
+        db.prepare("DELETE FROM oauth_tokens WHERE account_id=?1 AND client_id=?2").bind(body.account_id, body.client_id),
+      ]);
+      return ok({ revoked: body.client_id });
     }
 
     case "verify-token": {
@@ -319,15 +357,15 @@ export async function dispatch(env, op, body = {}) {
   }
 }
 
-async function mintTokens(db, accountId, scope, withRefresh) {
+async function mintTokens(db, accountId, scope, withRefresh, clientId = null) {
   const accessToken = rand("puid_at_", 32);
-  await db.prepare("INSERT INTO oauth_tokens (token_hash,account_id,scope,exp,kind) VALUES (?1,?2,?3,?4,'access')")
-    .bind(await sha256hex(accessToken), accountId, scope, now() + TOKEN_TTL_MS).run();
+  await db.prepare("INSERT INTO oauth_tokens (token_hash,account_id,client_id,scope,exp,kind) VALUES (?1,?2,?3,?4,?5,'access')")
+    .bind(await sha256hex(accessToken), accountId, clientId, scope, now() + TOKEN_TTL_MS).run();
   const out = { access_token: accessToken, token_type: "Bearer", expires_in: TOKEN_TTL_MS / 1000, scope };
   if (withRefresh) {
     const refreshToken = rand("puid_rt_", 32);
-    await db.prepare("INSERT INTO oauth_tokens (token_hash,account_id,scope,exp,kind) VALUES (?1,?2,?3,?4,'refresh')")
-      .bind(await sha256hex(refreshToken), accountId, scope, now() + 90 * DAY_MS).run();
+    await db.prepare("INSERT INTO oauth_tokens (token_hash,account_id,client_id,scope,exp,kind) VALUES (?1,?2,?3,?4,?5,'refresh')")
+      .bind(await sha256hex(refreshToken), accountId, clientId, scope, now() + 90 * DAY_MS).run();
     out.refresh_token = refreshToken;
   }
   return ok(out);

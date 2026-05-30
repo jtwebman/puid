@@ -79,6 +79,40 @@ test("usage events are logged per request", async ({ request }) => {
   expect(usage.total).toBeGreaterThanOrEqual(4);
 });
 
+test("API keys: create, list, and revoke (revoked key stops working)", async ({ request }) => {
+  await request.get(`/auth/dev-login?email=keys-${uniq()}@example.com&next=/dashboard`);
+  const k1 = await (await request.post("/api/team/keys", { data: { label: "one" } })).json();
+  await request.post("/api/team/keys", { data: { label: "two" } });
+  expect((await (await request.get("/api/keys")).json()).keys.length).toBe(2);
+  await request.post("/api/keys/revoke", { data: { key_id: k1.id } });
+  expect((await (await request.get("/api/keys")).json()).keys.length).toBe(1);
+  // the revoked key no longer authenticates
+  expect((await request.get("/api/v1/ids?n=1", { headers: { "X-API-Key": k1.api_key } })).status()).toBe(401);
+});
+
+test("OAuth authorization_code: app gets delegated access; owner can see + revoke it", async ({ request }) => {
+  await request.get(`/auth/dev-login?email=owner-oauth-${uniq()}@example.com&next=/dashboard`);
+  const reg = await (await request.post("/api/oauth/register", { data: { client_name: "My App", redirect_uris: ["https://app.example/cb"] } })).json();
+  // user approves the consent screen (PKCE, plain method for the test)
+  const dec = await request.post("/oauth/decision", {
+    form: { decision: "approve", client_id: reg.client_id, redirect_uri: "https://app.example/cb", scope: "puid:generate", state: "xyz", code_challenge: "secret123", code_challenge_method: "plain" },
+    maxRedirects: 0,
+  });
+  expect(dec.status()).toBe(302);
+  const code = new URL(dec.headers()["location"]).searchParams.get("code");
+  const tok = await (await request.post("/api/oauth/token", { form: { grant_type: "authorization_code", code, code_verifier: "secret123", client_id: reg.client_id, redirect_uri: "https://app.example/cb" } })).json();
+  expect(tok.access_token).toMatch(/^puid_at_/);
+  // the app generates ids on the team's behalf
+  expect((await request.get("/api/v1/ids?n=1", { headers: { authorization: `Bearer ${tok.access_token}` } })).status()).toBe(200);
+  // the owner sees the grant in their dashboard
+  const grants = await (await request.get("/api/grants")).json();
+  expect(grants.grants.some((g) => g.client_id === reg.client_id && g.name === "My App")).toBe(true);
+  // ...and revokes it; the token immediately stops working
+  await request.post("/api/grants/revoke", { data: { client_id: reg.client_id } });
+  expect((await (await request.get("/api/grants")).json()).grants.length).toBe(0);
+  expect((await request.get("/api/v1/ids?n=1", { headers: { authorization: `Bearer ${tok.access_token}` } })).status()).toBe(401);
+});
+
 test("OAuth2 client_credentials → bearer token generates ids", async ({ request }) => {
   const reg = await (await request.post("/api/oauth/register", {
     data: { client_name: "test", redirect_uris: ["https://app.example/cb"] },

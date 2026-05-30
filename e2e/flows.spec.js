@@ -41,6 +41,14 @@ test("sign in, mint a key, generate ids, decode them", async ({ page }) => {
   await expect(page.getByTestId("ordinals")).toContainText("#");
 });
 
+test("dashboard lists and revokes API keys", async ({ page }) => {
+  await devLogin(page, `keysui-${uniq()}@example.com`);
+  await page.getByTestId("mint-btn").click();
+  await expect(page.getByTestId("keys").locator("tbody tr")).toHaveCount(1);
+  await page.getByTestId("revoke-key").first().click();
+  await expect(page.getByTestId("keys")).toHaveCount(0); // table gone once no keys remain
+});
+
 test("create a second account", async ({ page }) => {
   await devLogin(page, `multi-${uniq()}@example.com`);
   page.once("dialog", (d) => d.accept("Second Co"));

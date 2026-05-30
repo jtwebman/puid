@@ -222,6 +222,26 @@ async function handleApi(request, env, origin, p, url) {
     const { status, data } = await authCall(env, "switch-account", { session: s.session, user_id: s.user_id, account_id: (await request.json().catch(() => ({}))).account_id });
     return json(data, status);
   }
+  if (p === "/keys") {
+    const s = await needSession(); if (!s) return json({ error: "not_logged_in" }, 401);
+    const { data } = await authCall(env, "list-keys", { account_id: s.active_account_id });
+    return json(data);
+  }
+  if (p === "/keys/revoke" && request.method === "POST") {
+    const s = await needSession(); if (!s) return json({ error: "not_logged_in" }, 401);
+    const { status, data } = await authCall(env, "revoke-key", { account_id: s.active_account_id, actor_user_id: s.user_id, key_id: (await request.json().catch(() => ({}))).key_id });
+    return json(data, status);
+  }
+  if (p === "/grants") {
+    const s = await needSession(); if (!s) return json({ error: "not_logged_in" }, 401);
+    const { data } = await authCall(env, "list-grants", { account_id: s.active_account_id });
+    return json(data);
+  }
+  if (p === "/grants/revoke" && request.method === "POST") {
+    const s = await needSession(); if (!s) return json({ error: "not_logged_in" }, 401);
+    const { status, data } = await authCall(env, "revoke-grant", { account_id: s.active_account_id, actor_user_id: s.user_id, client_id: (await request.json().catch(() => ({}))).client_id });
+    return json(data, status);
+  }
   if (p === "/team/keys" && request.method === "POST") {
     const s = await needSession(); if (!s) return json({ error: "not_logged_in" }, 401);
     const { data } = await authCall(env, "create-key", { account_id: s.active_account_id, actor_user_id: s.user_id, label: (await request.json().catch(() => ({}))).label });

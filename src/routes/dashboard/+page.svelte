@@ -18,6 +18,8 @@
 	let members = $state([]);
 	let usage = $state(null);
 	let usageBucket = $state('day');
+	let keys = $state([]);
+	let grants = $state([]);
 
 	const api = (p, o) => fetch('/api' + p, { credentials: 'same-origin', ...o });
 	const post = (p, body) => api(p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) });
@@ -35,13 +37,19 @@
 		await loadTeam();
 		await loadMembers();
 		await loadUsage();
+		await loadKeys();
+		await loadGrants();
 	}
+	async function loadKeys() { keys = (await (await api('/keys')).json()).keys || []; }
+	async function loadGrants() { grants = (await (await api('/grants')).json()).grants || []; }
 	async function loadTeam() { const r = await (await api('/team/settings')).json(); role = r.role; joinCode = r.join_code; }
 	async function loadMembers() { const r = await (await api('/team/members')).json(); members = r.members || []; }
 	async function loadUsage() { usage = await (await api('/usage?bucket=' + usageBucket)).json(); }
 	async function switchAccount(e) { await post('/account/switch', { account_id: e.currentTarget.value }); apiKey = null; await load(); }
 	async function createAccount() { const name = prompt('New account name?'); if (!name) return; await post('/account/create', { name }); await load(); }
-	async function mintKey() { const r = await (await post('/team/keys', {})).json(); apiKey = r.api_key; }
+	async function mintKey() { const r = await (await post('/team/keys', {})).json(); apiKey = r.api_key; await loadKeys(); }
+	async function revokeKey(id) { await post('/keys/revoke', { key_id: id }); if (keys.length === 1) apiKey = null; await loadKeys(); }
+	async function revokeGrant(clientId) { await post('/grants/revoke', { client_id: clientId }); await loadGrants(); }
 	async function gen() {
 		if (!apiKey) { alert('Mint an API key first.'); return; }
 		genErr = '';
@@ -103,6 +111,37 @@
 			{#if apiKey}<pre data-testid="key-out" class="mt-3 overflow-auto rounded-lg bg-zinc-100 p-3 font-mono text-sm dark:bg-zinc-950">{apiKey}
 
 Save it — we hash it and cannot show it again.</pre>{/if}
+			{#if keys.length}
+				<table class="mt-4 w-full text-sm" data-testid="keys">
+					<tbody>
+						{#each keys as k (k.id)}
+							<tr class="border-b border-zinc-200 dark:border-zinc-800">
+								<td class="py-1.5">{k.label}</td>
+								<td class="font-mono text-zinc-500 dark:text-zinc-400">…{k.hint}</td>
+								<td class="text-right"><button class="text-sm text-red-600 hover:underline dark:text-red-400" data-testid="revoke-key" onclick={() => revokeKey(k.id)}>Revoke</button></td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{/if}
+		</div>
+
+		<div class="{cardCls} mt-4">
+			<h3 class="mb-2 font-semibold">Authorized apps</h3>
+			<p class="text-sm text-zinc-500 dark:text-zinc-400">Apps you've granted permission to generate ids on this account's behalf (via OAuth). Revoke any time.</p>
+			{#if grants.length}
+				<table class="mt-3 w-full text-sm" data-testid="grants">
+					<tbody>
+						{#each grants as g (g.client_id)}
+							<tr class="border-b border-zinc-200 dark:border-zinc-800">
+								<td class="py-1.5">{g.name || g.client_id}</td>
+								<td class="font-mono text-zinc-500 dark:text-zinc-400">{g.scope}</td>
+								<td class="text-right"><button class="text-sm text-red-600 hover:underline dark:text-red-400" data-testid="revoke-grant" onclick={() => revokeGrant(g.client_id)}>Revoke</button></td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{:else}<p class="mt-3 text-sm text-zinc-400 dark:text-zinc-500">No apps authorized.</p>{/if}
 		</div>
 
 		<div class="{cardCls} mt-4">

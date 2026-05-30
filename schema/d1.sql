@@ -51,9 +51,11 @@ CREATE INDEX IF NOT EXISTS idx_memberships_user ON memberships(user_id);
 
 CREATE TABLE IF NOT EXISTS api_keys (
   key_hash   TEXT PRIMARY KEY,                 -- sha256(key); plaintext shown once
+  id         TEXT NOT NULL,                    -- public id for listing/revoking (key_xxx)
   account_id TEXT NOT NULL REFERENCES accounts(id),
   created_by TEXT REFERENCES users(id),
   label      TEXT,
+  hint       TEXT,                             -- last 4 chars, so users can tell keys apart
   created    INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_api_keys_account ON api_keys(account_id);
@@ -89,11 +91,22 @@ CREATE TABLE IF NOT EXISTS oauth_codes (
 CREATE TABLE IF NOT EXISTS oauth_tokens (
   token_hash TEXT PRIMARY KEY,
   account_id TEXT NOT NULL,
+  client_id  TEXT,                             -- which app holds this token (null for client_credentials)
   scope      TEXT NOT NULL,
   exp        INTEGER NOT NULL,
   kind       TEXT NOT NULL DEFAULT 'access'    -- 'access' | 'refresh'
 );
 CREATE INDEX IF NOT EXISTS idx_tokens_acct ON oauth_tokens(account_id);
+
+-- A standing grant: account A authorized app C to act on its behalf. Lets the
+-- owner see which apps have access and revoke them (deletes their tokens too).
+CREATE TABLE IF NOT EXISTS oauth_grants (
+  account_id TEXT NOT NULL,
+  client_id  TEXT NOT NULL,
+  scope      TEXT NOT NULL,
+  created    INTEGER NOT NULL,
+  PRIMARY KEY (account_id, client_id)
+);
 
 -- Per-request usage log. One row per /v1/ids call, written atomically with the
 -- counter increment (see allocateOrdinals). Stamped with account_id so we can
