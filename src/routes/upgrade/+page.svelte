@@ -1,6 +1,14 @@
 <script>
 	import { page } from '$app/state';
 	const m = $derived(page.data.m);
+	const plan = $derived(page.url.searchParams.get('plan'));
+	const title = $derived(
+		plan === 'enterprise'
+			? 'Want your own private, self-hosted PUID?'
+			: plan === 'professional'
+				? 'Ready to upgrade to Professional?'
+				: 'Need more than 1 request / second?'
+	);
 
 	const LINKEDIN = 'https://linkedin.com/in/jtwebman';
 	const X = 'https://x.com/jtwebman';
@@ -35,7 +43,7 @@
 <main class="mx-auto max-w-3xl px-5">
 	<section class="py-12">
 		<span class="mb-4 inline-block rounded-full border border-indigo-300/60 bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-600 dark:text-indigo-300">★ Enterprise-grade counting</span>
-		<h1 class="text-4xl font-bold tracking-tight">Need more than 1 request / second?</h1>
+		<h1 class="text-4xl font-bold tracking-tight">{title}</h1>
 		<p class="mt-3 max-w-xl text-lg text-zinc-500 dark:text-zinc-400">Excellent. Upgrades require sign-off, so we've prepared the business case. Just send it to your manager.</p>
 		<div class="mt-6">
 			<a href={mailto} data-testid="email-manager" class="inline-flex min-h-11 items-center rounded-xl bg-indigo-600 px-5 font-semibold text-white hover:bg-indigo-500">✉️ Email your manager the justification</a>

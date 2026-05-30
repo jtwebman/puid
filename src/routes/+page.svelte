@@ -65,7 +65,7 @@
 				<ul class="mt-4 grow space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
 					{#each m.pro_features.split('\n') as f}<li class="flex gap-2"><span class="text-indigo-600 dark:text-indigo-400">✓</span>{f}</li>{/each}
 				</ul>
-				<a href="/upgrade" class="mt-6 inline-flex min-h-10 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500">{m.upgrade_cta}</a>
+				<a href="/upgrade?plan=professional" class="mt-6 inline-flex min-h-10 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500">{m.upgrade_cta}</a>
 			</div>
 			<!-- Enterprise (self-hosted, unlimited) -->
 			<div class="flex flex-col rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900">
@@ -75,6 +75,7 @@
 				<ul class="mt-4 grow space-y-2 text-sm text-zinc-600 dark:text-zinc-300">
 					{#each m.ent_features.split('\n') as f}<li class="flex gap-2"><span class="text-indigo-600 dark:text-indigo-400">✓</span>{f}</li>{/each}
 				</ul>
+				<a href="/upgrade?plan=enterprise" class="mt-6 inline-flex min-h-10 items-center justify-center rounded-lg border border-zinc-300 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">{m.upgrade_cta}</a>
 			</div>
 		</div>
 	</section>
