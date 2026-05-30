@@ -1,0 +1,24 @@
+{
+  "name": "puid",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Probably Unique IDentifier — a counter in a trench coat. Provably collision-free, aggressively rate-limited, deeply unnecessary.",
+  "scripts": {
+    "dev": "wrangler dev --port 8799",
+    "deploy": "wrangler deploy",
+    "test": "node test/puid.test.mjs",
+    "test:api": "vitest run",
+    "test:e2e": "playwright test",
+    "dev:e2e": "wrangler d1 execute puid --local --file=schema/d1.sql && wrangler dev --port 8799",
+    "gen:clients": "node tools/gen-clients.mjs",
+    "gen:openapi": "node tools/gen-openapi.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.5.0",
+    "@playwright/test": "^1.48.0",
+    "vitest": "~2.1.0",
+    "wrangler": "^3.90.0"
+  },
+  "license": "AGPL-3.0"
+}

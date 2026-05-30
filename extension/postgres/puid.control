@@ -1,0 +1,7 @@
+# puid Postgres extension. A custom column type whose DEFAULT makes an outbound
+# HTTP call to a rate-limited (1/sec) joke API on every single INSERT.
+comment = 'PUID type: globally-unique ids via a remote counter. Catastrophic by design.'
+default_version = '1.0'
+module_pathname = ''
+relocatable = true
+# requires plpython3u (CREATE EXTENSION plpython3u; as superuser first).
