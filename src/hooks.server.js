@@ -2,7 +2,7 @@
 //   • /api, /auth, /oauth, /join  → delegated to the ported router (returns a Response)
 //   • everything else             → SvelteKit pages, with <html lang/dir> set per locale
 import { handle as routerHandle } from "$lib/server/router.js";
-import { pickLocale, LOCALES } from "$lib/i18n.js";
+import { pickLocale, LOCALES } from "$lib/i18n";
 
 const SERVER_ROUTE = /^\/(api|auth|oauth|join)(\/|$)/;
 

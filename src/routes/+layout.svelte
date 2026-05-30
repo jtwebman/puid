@@ -21,4 +21,15 @@
 	</header>
 
 	{@render children()}
+
+	<footer class="mt-16 border-t border-zinc-200 px-5 py-8 dark:border-zinc-800">
+		<div class="mx-auto flex max-w-3xl flex-col items-center gap-3 text-sm text-zinc-500 sm:flex-row sm:justify-between dark:text-zinc-400">
+			<p>© {new Date().getFullYear()} PUID · {data.m.foot_rights}</p>
+			<nav class="flex flex-wrap items-center gap-4">
+				<a href="/why" class="hover:text-zinc-900 dark:hover:text-zinc-100">{data.m.foot_why}</a>
+				<a href="/terms" class="hover:text-zinc-900 dark:hover:text-zinc-100">{data.m.foot_terms}</a>
+				<a href="/privacy" class="hover:text-zinc-900 dark:hover:text-zinc-100">{data.m.foot_privacy}</a>
+			</nav>
+		</div>
+	</footer>
 </div>

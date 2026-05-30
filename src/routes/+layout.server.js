@@ -1,4 +1,4 @@
-import { messagesFor, LOCALES } from "$lib/i18n.js";
+import { messagesFor, LOCALES } from "$lib/i18n";
 
 // Provide the active locale + its merged messages to every page. SSR per request
 // (no prerender) so ?lang / Accept-Language take effect at runtime.
