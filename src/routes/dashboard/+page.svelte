@@ -17,6 +17,7 @@
 	let joinCode = $state(null);
 	let members = $state([]);
 	let usage = $state(null);
+	let usageBucket = $state('day');
 
 	const api = (p, o) => fetch('/api' + p, { credentials: 'same-origin', ...o });
 	const post = (p, body) => api(p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) });
@@ -37,7 +38,7 @@
 	}
 	async function loadTeam() { const r = await (await api('/team/settings')).json(); role = r.role; joinCode = r.join_code; }
 	async function loadMembers() { const r = await (await api('/team/members')).json(); members = r.members || []; }
-	async function loadUsage() { usage = await (await api('/usage')).json(); }
+	async function loadUsage() { usage = await (await api('/usage?bucket=' + usageBucket)).json(); }
 	async function switchAccount(e) { await post('/account/switch', { account_id: e.currentTarget.value }); apiKey = null; await load(); }
 	async function createAccount() { const name = prompt('New account name?'); if (!name) return; await post('/account/create', { name }); await load(); }
 	async function mintKey() { const r = await (await post('/team/keys', {})).json(); apiKey = r.api_key; }
@@ -58,7 +59,7 @@
 
 	const joinLink = $derived(joinCode ? location.origin + '/join/' + joinCode : '');
 	const mailto = $derived(joinCode ? 'mailto:?subject=' + encodeURIComponent('Join my PUID team') + '&body=' + encodeURIComponent('Join my team on PUID. Sign in with Google or Microsoft, then you are in:\n' + joinLink) : '');
-	const maxDay = $derived(usage?.days?.length ? Math.max(...usage.days.map((d) => d.count)) : 0);
+	const maxPoint = $derived(usage?.points?.length ? Math.max(...usage.points.map((p) => p.count)) : 0);
 
 	onMount(load);
 
@@ -117,11 +118,18 @@ Save it — we hash it and cannot show it again.</pre>{/if}
 		</div>
 
 		<div class="{cardCls} mt-4">
-			<h3 class="mb-2 font-semibold">Usage <span class="text-sm font-normal text-zinc-500 dark:text-zinc-400">(last 30 days · total {usage?.total ?? 0})</span></h3>
-			{#if usage?.days?.length}
-				<div class="flex items-end gap-1" style="height:80px">
-					{#each usage.days as d}
-						<div class="flex-1 rounded-t bg-indigo-500/70" style="height:{maxDay ? Math.max(4, (d.count / maxDay) * 80) : 4}px" title={'#' + d.count}></div>
+			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+				<h3 class="font-semibold">Usage <span class="text-sm font-normal text-zinc-500 dark:text-zinc-400">(total {usage?.total ?? 0})</span></h3>
+				<select value={usageBucket} onchange={(e) => { usageBucket = e.currentTarget.value; loadUsage(); }} class="rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700">
+					<option value="minute">Per minute</option>
+					<option value="hour">Per hour</option>
+					<option value="day">Per day</option>
+				</select>
+			</div>
+			{#if usage?.points?.length}
+				<div class="flex items-end gap-px" style="height:80px">
+					{#each usage.points as p}
+						<div class="flex-1 rounded-t bg-indigo-500/70" style="height:{maxPoint ? Math.max(3, (p.count / maxPoint) * 80) : 3}px" title={new Date(p.t).toLocaleString() + ': ' + p.count}></div>
 					{/each}
 				</div>
 			{:else}<p class="text-sm text-zinc-500 dark:text-zinc-400">No ids generated yet.</p>{/if}

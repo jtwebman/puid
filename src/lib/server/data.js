@@ -286,14 +286,32 @@ export async function dispatch(env, op, body = {}) {
       return ok({ allowed: true, used: used + want, limit, plan });
     }
 
-    // ----- usage dashboard: per-day issuance for an account, last 30 days -----
+    // ----- API-key quota check (no id spent) -----
+    case "quota-status": {
+      const account = body.account_id.startsWith("team_")
+        ? await db.prepare("SELECT plan FROM accounts WHERE id=?1").bind(body.account_id).first() : null;
+      const plan = account?.plan ?? "free";
+      const limit = plan === "free" ? FREE_DAILY_QUOTA : null; // null = unlimited
+      const dayStart = Math.floor(now() / DAY_MS) * DAY_MS;
+      const row = await db.prepare("SELECT COALESCE(SUM(n),0) AS used FROM usage_events WHERE account_id=?1 AND ts>=?2").bind(body.account_id, dayStart).first();
+      const used = Number(row?.used ?? 0);
+      return ok({ plan, used, limit, remaining: limit === null ? null : Math.max(0, limit - used) });
+    }
+
+    // ----- dashboard usage chart: bucket issuance by minute / hour / day -----
     case "list-usage": {
-      const since = now() - 30 * DAY_MS;
+      const SIZE = { minute: 60000, hour: 3600000, day: 86400000 };
+      const DEFAULT_WINDOW = { minute: 60, hour: 48, day: 30 };
+      const MAX_WINDOW = { minute: 90, hour: 72, day: 90 };
+      const b = SIZE[body.bucket] ? body.bucket : "day";
+      const size = SIZE[b];
+      const window = Math.max(1, Math.min(MAX_WINDOW[b], Number(body.window) || DEFAULT_WINDOW[b]));
+      const since = now() - window * size;
       const { results } = await db.prepare(
-        "SELECT (ts/86400000) AS day, SUM(n) AS count FROM usage_events WHERE account_id=?1 AND ts>=?2 GROUP BY day ORDER BY day"
-      ).bind(body.account_id, since).all();
+        "SELECT (ts/?1) AS t, SUM(n) AS count FROM usage_events WHERE account_id=?2 AND ts>=?3 GROUP BY t ORDER BY t"
+      ).bind(size, body.account_id, since).all();
       const tot = await db.prepare("SELECT COALESCE(SUM(n),0) AS total FROM usage_events WHERE account_id=?1").bind(body.account_id).first();
-      return ok({ days: results, total: Number(tot?.total ?? 0) });
+      return ok({ bucket: b, window, points: results.map((r) => ({ t: Number(r.t) * size, count: Number(r.count) })), total: Number(tot?.total ?? 0) });
     }
 
     default:

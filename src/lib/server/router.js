@@ -158,24 +158,19 @@ async function handleApi(request, env, origin, p, url) {
     const q = await authCall(env, "quota", { account_id: principal.accountId, want: n });
     if (q.status === 402) return json({ ...q.data, upgrade_url: `${origin}/upgrade` }, 402);
     const ids = (await takeOrdinals(env, n, principal.accountId)).map(encodePuid);
-    return json({ ids, count: ids.length, quota: { used: q.data.used, limit: q.data.limit },
-      warning: "Sequential under a disguise. Subtracting two reveals our total issuance. Do not use this." });
+    return json({ ids, count: ids.length, quota: { used: q.data.used, limit: q.data.limit } });
   }
   if (p.startsWith("/v1/ordinal/")) {
     const puid = decodeURIComponent(p.split("/").pop());
-    try { const ordinal = decodePuid(puid); return json({ puid, ordinal: ordinal.toString(), truth: `This "random unique" id was always just #${ordinal}.` }); }
+    try { const ordinal = decodePuid(puid); return json({ puid, ordinal: ordinal.toString() }); }
     catch (e) { return json({ error: "bad_request", message: `Not a valid PUID: ${e.message}` }, 400); }
   }
-  if (p === "/metrics") {
-    const row = await env.DB.prepare("SELECT next FROM sequence WHERE id = 1").first();
-    return json({ ids_ever_issued: String((row?.next ?? 1) - 1), note: "Competitive intelligence, free of charge." });
-  }
-  if (p === "/pricing") {
-    return json({ tiers: {
-      free: { price: "$0", quota: "1000 ids/day", rate: "1 req/sec" },
-      hobby: { price: "$5/mo", quota: "10000 ids/day", rate: "5 req/sec" },
-      enterprise: { price: "call us", quota: "unlimited", rate: "10 req/sec" },
-    }, joke: "Yes, we charge money to make a counter count faster." });
+  // Check your quota WITHOUT spending an id. API-key auth (a real service endpoint).
+  if (p === "/v1/quota") {
+    const principal = await principalFromRequest(env, request);
+    if (!principal) return json({ error: "unauthorized", message: "Send X-API-Key." }, 401);
+    const { data } = await authCall(env, "quota-status", { account_id: principal.accountId });
+    return json(data);
   }
 
   if (p === "/oauth/register" && request.method === "POST") {
@@ -199,9 +194,12 @@ async function handleApi(request, env, origin, p, url) {
     const { data } = await authCall(env, "list-accounts", { user_id: s.user_id });
     return json({ active_account_id: s.active_account_id, ...data });
   }
+  // Dashboard usage charts. SESSION auth (Google/Microsoft), NOT the API key —
+  // this is part of the dashboard/site, not the public service. Buckets by
+  // minute / hour / day over a window.
   if (p === "/usage") {
     const s = await needSession(); if (!s) return json({ error: "not_logged_in" }, 401);
-    const { data } = await authCall(env, "list-usage", { account_id: s.active_account_id });
+    const { data } = await authCall(env, "list-usage", { account_id: s.active_account_id, bucket: url.searchParams.get("bucket"), window: url.searchParams.get("window") });
     return json(data);
   }
   // test-only: seed today's usage so the quota (402) path is testable without

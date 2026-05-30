@@ -24,7 +24,15 @@ test("openapi doc is served with a runtime base url (works locally)", async ({ r
   expect(spec.openapi).toBe("3.1.0");
   // server url is the runtime origin, not hardcoded prod — so Try-it-out works here
   expect(spec.servers[0].url).toMatch(/^http:\/\/localhost:8799\/api$/);
-  expect(Object.keys(spec.paths)).toEqual(["/v1/ids", "/v1/ordinal/{puid}"]);
+  expect(Object.keys(spec.paths)).toEqual(["/v1/ids", "/v1/ordinal/{puid}", "/v1/quota"]);
+});
+
+test("/v1/quota reports usage without spending an id (API key)", async ({ request }) => {
+  const key = await keyFor(request, `quotachk-${uniq()}@example.com`);
+  const q = await (await request.get("/api/v1/quota", { headers: { "X-API-Key": key } })).json();
+  expect(q.plan).toBe("free");
+  expect(q.limit).toBe(1000);
+  expect(q.remaining).toBe(1000); // nothing spent yet
 });
 
 test("API key → generate unique base62 ids; ordinal decodes back", async ({ request }) => {

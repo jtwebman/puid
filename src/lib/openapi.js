@@ -57,6 +57,18 @@ export const SPEC = {
         },
       },
     },
+    "/v1/quota": {
+      get: {
+        tags: ["ids"],
+        operationId: "quota",
+        summary: "Check your daily quota",
+        description: "Returns today's usage and remaining quota for the calling account. Does not spend an id.",
+        responses: {
+          "200": { description: "Current quota.", content: { "application/json": { schema: { $ref: "#/components/schemas/QuotaResponse" } } } },
+          "401": { description: "Missing or invalid credentials.", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {
@@ -64,7 +76,8 @@ export const SPEC = {
     },
     schemas: {
       IdsResponse: { type: "object", required: ["ids", "count"], properties: { ids: { type: "array", items: { type: "string" } }, count: { type: "integer" }, quota: { type: "object", properties: { used: { type: "integer" }, limit: { type: "integer" } } }, warning: { type: "string" } } },
-      OrdinalResponse: { type: "object", required: ["puid", "ordinal"], properties: { puid: { type: "string" }, ordinal: { type: "string" }, truth: { type: "string" } } },
+      OrdinalResponse: { type: "object", required: ["puid", "ordinal"], properties: { puid: { type: "string" }, ordinal: { type: "string" } } },
+      QuotaResponse: { type: "object", required: ["plan", "used"], properties: { plan: { type: "string" }, used: { type: "integer" }, limit: { type: ["integer", "null"] }, remaining: { type: ["integer", "null"] } } },
       Error: { type: "object", properties: { error: { type: "string" }, message: { type: "string" } } },
     },
   },
