@@ -1,6 +1,4 @@
 <script>
-	import { page } from '$app/state';
-	const m = $derived(page.data.m);
 	const updated = 'May 30, 2026';
 </script>
 
@@ -51,6 +49,4 @@
 		<h2>8. Changes</h2>
 		<p>We'll post updates here with a new "last updated" date.</p>
 	</div>
-
-	<p class="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">{m.footer}</p>
 </main>

@@ -1,6 +1,4 @@
 <script>
-	import { page } from '$app/state';
-	const m = $derived(page.data.m);
 	const updated = 'May 30, 2026';
 </script>
 
@@ -45,6 +43,4 @@
 		<h2>10. Contact</h2>
 		<p>Questions: <a href="https://linkedin.com/in/jtwebman" target="_blank" rel="noopener">linkedin.com/in/jtwebman</a>.</p>
 	</div>
-
-	<p class="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">{m.footer}</p>
 </main>
