@@ -35,6 +35,9 @@ export const LOCALES = {
 const M = {
   en: {
     tagline: "Like a UUID — but it's secretly just a counter.",
+    hero_sub: "The unique id the world is missing!",
+    hero_desc:
+      "UUIDs gamble on uniqueness — there's always a nonzero chance two collide. PUID harnesses a proprietary, patent-pending uniqueness engine to deliver deterministic, collision-free identifiers at web scale. Cloud-native, enterprise-grade, and provably unique by design. The how is our secret sauce.",
     nav_docs: "API Docs",
     nav_dashboard: "Dashboard",
     nav_metrics: "Metrics",

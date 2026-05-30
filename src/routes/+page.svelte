@@ -17,9 +17,9 @@
 
 <main class="mx-auto max-w-3xl px-5">
 	<section class="py-12">
-		<span class="mb-4 inline-block rounded-full border border-indigo-300/60 bg-indigo-500/10 px-3 py-1 text-xs font-semibold text-indigo-600 dark:text-indigo-300">★ The most over-engineered way to count</span>
 		<h1 class="text-5xl font-bold tracking-tight sm:text-6xl">PUID</h1>
-		<p class="mt-3 max-w-xl text-lg text-zinc-500 sm:text-xl dark:text-zinc-400">{m.tagline}</p>
+		<p class="mt-3 max-w-xl text-lg text-zinc-500 sm:text-xl dark:text-zinc-400">{m.hero_sub}</p>
+		<p class="mt-4 max-w-xl text-zinc-600 dark:text-zinc-300">{m.hero_desc}</p>
 		<p class="mt-4 font-mono text-sm break-all text-zinc-500 dark:text-zinc-400">
 			#1 → <b class="text-zinc-900 dark:text-zinc-100">64qAN39GjJh5kbi4HROOxh</b> ·
 			#2 → <b class="text-zinc-900 dark:text-zinc-100">7U17bzw0MO3mzwuFKO7cc0</b>
