@@ -6,7 +6,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SPEC } from "../src/openapi.js";
+import { SPEC } from "../src/lib/openapi.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "clients");
 const BASE = SPEC.servers[0].url;                       // https://puid.dev/api

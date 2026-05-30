@@ -27,28 +27,38 @@ Proof, not vibes: `npm test` encodes the first 2,000,000 ordinals and asserts **
 
 ## Architecture
 
-Everything runs on **Cloudflare Workers + D1** (SQLite). Two surfaces on one Worker:
+A **SvelteKit** app (Svelte 5 + Tailwind v4) on **Cloudflare Workers + D1** via `@sveltejs/adapter-cloudflare` — the same stack as the sibling sites `slowbreath`/`onyourfeet`. Two surfaces, one deploy:
 
 | Surface | What lives there |
 |---|---|
-| `puid.dev` | Marketing site, interactive docs (`/docs`), login + dashboard (`/dashboard`), OAuth2 consent screen |
-| `puid.dev/api` | The JSON API: ids, ordinal, metrics, OAuth2 token/registration, dashboard AJAX |
+| `puid.dev` | Marketing site, interactive docs (`/docs`), login + dashboard (`/dashboard`), upgrade/paywall (`/upgrade`) — Svelte pages, mobile-first, light/dark, 20 languages |
+| `puid.dev/api` | The JSON API: ids, ordinal, metrics, OAuth2, dashboard AJAX — served by the router |
 
 ```
 src/
-  puid.js        bijective permutation (Feistel) + base62 — the entire IP
-  index.js       Worker router: site + auth flows + /api
-  data.js        D1 data layer: accounts, M:N memberships, keys, oauth, quota, counter, rate limit
-  oauth_login.js INBOUND login — we are the OAuth *client* of Google/Microsoft
-  openapi.js     the OpenAPI 3.1 spec (single source of truth) + YAML emitter
-  site.js        landing / docs / dashboard HTML
-schema/d1.sql    relational schema (users, accounts, memberships, keys, tokens, sequence, …)
-extension/postgres/   a `puid` column type whose DEFAULT calls this API on every INSERT
-tools/
-  gen-openapi.mjs  writes openapi.{json,yaml} from src/openapi.js
-  gen-clients.mjs  writes 20 SDKs from src/openapi.js (base URL + X-API-Key come from the spec)
-clients/         generated SDKs for 20 languages
+  app.html, app.css        shell + Tailwind v4 (class-based .dark, no-FOUC theme script)
+  hooks.server.js          delegates /api,/auth,/oauth,/join to the router; sets <html lang/dir>
+  lib/
+    puid.js                bijective permutation (Feistel) + base62 — the entire IP
+    openapi.js             OpenAPI 3.1 spec (single source of truth) + YAML emitter
+    i18n.js                20-locale message dictionary + locale negotiation
+    ThemeToggle.svelte, LanguageSwitcher.svelte   top-right dropdowns
+    server/
+      router.js            the API + browser auth flows (Response or null)
+      data.js              D1 layer: accounts, M:N memberships, keys, oauth, quota, counter, usage, rate limit
+      oauth_login.js       INBOUND login — we are the OAuth *client* of Google/Microsoft
+  routes/
+    +layout.svelte, +page.svelte (landing), docs/, dashboard/, upgrade/
+schema/d1.sql              relational schema (users, accounts, memberships, keys, tokens, sequence, usage_events)
+extension/postgres/        a `puid` column type whose DEFAULT calls this API on every INSERT
+tools/                     gen-openapi.mjs + gen-clients.mjs (generate openapi.{json,yaml} + 20 SDKs from the spec)
+clients/                   generated SDKs for 20 languages
+e2e/                       Playwright API + browser tests
 ```
+
+### Web app
+
+Mobile-first, responsive, **light/dark** (system default + a top-right dropdown, class-based like the sibling sites), and **internationalized into 20 languages** (incl. RTL Arabic/Hebrew) — language is negotiated from `Accept-Language` and switchable via a dropdown; long-form copy falls back to English. The dashboard signs you in, mints keys, generates ids (and decodes them live), manages accounts/teams/join-codes, and shows a per-account usage chart. `/upgrade` is the paywall gag.
 
 ### Why D1 and not Durable Objects?
 
@@ -58,7 +68,7 @@ We started with Durable Objects (a single-threaded counter is a perfect fit). Bu
 
 Two OAuth layers, deliberately:
 
-1. **Inbound (we are the client):** "Sign in with Google / Microsoft." We never send email or store passwords — the provider already verified the human, at no cost to us. A login creates a **team/account**; you can create more and switch between them; owners can invite teammates (accepting an invite *adds* a membership — you keep your other accounts).
+1. **Inbound (we are the client):** "Sign in with Google / Microsoft." We never send email or store passwords — the provider already verified the human, at no cost to us. A login creates a **team/account**; you can create more and switch between them. Owners share a **reusable, revocable join code** (`puid.dev/join/<code>`): anyone with it joins as a member (after signing in); rotating it kills the old code, revoking disables joining. Joining *adds* a membership — you keep your other accounts.
 2. **Outbound (we are the provider):** a full OAuth2 authorization server (`/oauth/authorize`, `/api/oauth/token`, dynamic client registration, **PKCE**, refresh tokens, `client_credentials`) so third-party apps can call the API on a team's behalf. Discovery at `/api/.well-known/oauth-authorization-server`.
 
 SDKs and direct calls authenticate with a **team API key** (`X-API-Key: puid_live_…`), minted in the dashboard.
@@ -77,11 +87,22 @@ You opted into the **$5/mo Workers Paid plan** — but the usage itself rounds t
 > The 1-req/sec limit and 1000/day free quota you designed for comedy are also exactly what pins the infra bill to ~$5/mo. The cost control *is* the bit.
 > (It would even run at **$0** on the free plan if you dropped to `*.workers.dev` and skipped Durable Objects — which we did. The $5 is now just headroom.)
 
+## Develop & test
+
+```bash
+npm install
+npm run dev          # vite dev on :8799 (adapter emulates D1 + reads .dev.vars)
+npm test             # node unit proof: 2,000,000 ids, 0 collisions, roundtrip
+npm run test:e2e     # Playwright: API (request fixture) + browser flows, against vite dev
+```
+
+Local dev/tests use a `.dev.vars` flag `ALLOW_DEV_LOGIN=1` to enable `/auth/dev-login`, a test-only stand-in for Google/Microsoft sign-in (never set in production). To exercise the *real* OAuth flow locally, register `http://localhost:8799/auth/callback/{google,microsoft}` and fill the client id/secrets in `.dev.vars`.
+
 ## Deploy
 
 ```bash
-npm install                       # wrangler
-wrangler d1 create puid           # paste the database_id into wrangler.toml
+npm install
+wrangler d1 create puid                              # paste database_id into wrangler.jsonc
 wrangler d1 execute puid --file=schema/d1.sql --remote
 
 # inbound social-login secrets (register apps in Google Cloud + Azure first):
@@ -90,13 +111,13 @@ wrangler secret put GOOGLE_CLIENT_SECRET
 wrangler secret put MICROSOFT_CLIENT_ID
 wrangler secret put MICROSOFT_CLIENT_SECRET
 
-wrangler deploy
+npm run deploy                                       # vite build && wrangler deploy
 ```
 
 **OAuth redirect URIs** to register with each provider:
 `https://puid.dev/auth/callback/google` and `https://puid.dev/auth/callback/microsoft`.
 
-**Domain:** point `puid.dev`'s nameservers at Cloudflare; once the zone is active, the `routes` entry in `wrangler.toml` serves the Worker on the apex.
+**Domain:** point `puid.dev`'s nameservers at Cloudflare; once the zone is active, add a `routes` custom-domain entry in `wrangler.jsonc`.
 
 ## SDKs
 
