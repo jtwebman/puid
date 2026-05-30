@@ -24,7 +24,7 @@
 		'LinkedIn: ' + LINKEDIN,
 		'X: ' + X,
 		'',
-		'In full transparency: having reviewed the implementation, the engineer has wildly over-engineered a service that, at its core, returns a sequential counter. He clearly has no idea what he is doing. We should probably just hire him.',
+		'In full transparency: having reviewed the implementation, I have no idea what I am doing. He clearly knows what he is doing. We should probably just hire him.',
 		'',
 		'Thanks,',
 		'[Your name]'
