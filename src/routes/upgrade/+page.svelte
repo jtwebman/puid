@@ -1,6 +1,5 @@
 <script>
 	import { page } from '$app/state';
-	const m = $derived(page.data.m);
 	const plan = $derived(page.url.searchParams.get('plan'));
 	const title = $derived(
 		plan === 'enterprise'
@@ -64,6 +63,4 @@
 			<a href={X} target="_blank" rel="noopener" class="inline-flex min-h-11 items-center rounded-xl border border-zinc-300 px-5 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">x.com/jtwebman →</a>
 		</div>
 	</section>
-
-	<p class="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">{m.footer}</p>
 </main>

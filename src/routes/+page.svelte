@@ -79,6 +79,4 @@
 			</div>
 		</div>
 	</section>
-
-	<p class="py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">{m.footer}</p>
 </main>
