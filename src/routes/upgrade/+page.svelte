@@ -49,8 +49,9 @@
 
 	<section class="mt-12">
 		<h2 class="mb-3 text-2xl font-semibold tracking-tight">Or skip the meeting</h2>
-		<p class="text-zinc-500 dark:text-zinc-400">If you genuinely want this, contact the engineer to purchase. Candidly, he has no idea what he's doing — so you should probably just hire him.</p>
+		<p class="text-zinc-500 dark:text-zinc-400">If you genuinely want this, contact the engineer to purchase but first read the <a class="text-indigo-600 dark:text-indigo-400" href="/why">why page</a> below as you should probably just hire him.</p>
 		<div class="mt-5 flex flex-wrap gap-3">
+			<a href="/why" class="inline-flex min-h-11 items-center rounded-xl border border-zinc-300 px-5 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Why PUID? →</a>
 			<a href={LINKEDIN} target="_blank" rel="noopener" class="inline-flex min-h-11 items-center rounded-xl bg-indigo-600 px-5 font-semibold text-white hover:bg-indigo-500">in/jtwebman →</a>
 			<a href={X} target="_blank" rel="noopener" class="inline-flex min-h-11 items-center rounded-xl border border-zinc-300 px-5 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">x.com/jtwebman →</a>
 		</div>
