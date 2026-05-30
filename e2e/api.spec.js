@@ -19,10 +19,12 @@ test("unauthenticated /api/v1/ids is 401", async ({ request }) => {
   expect(r.status()).toBe(401);
 });
 
-test("openapi doc is served and self-consistent", async ({ request }) => {
+test("openapi doc is served with a runtime base url (works locally)", async ({ request }) => {
   const spec = await (await request.get("/api/openapi.json")).json();
   expect(spec.openapi).toBe("3.1.0");
-  expect(spec.servers[0].url).toBe("https://puid.dev/api");
+  // server url is the runtime origin, not hardcoded prod — so Try-it-out works here
+  expect(spec.servers[0].url).toMatch(/^http:\/\/localhost:8799\/api$/);
+  expect(Object.keys(spec.paths)).toEqual(["/v1/ids", "/v1/ordinal/{puid}"]);
 });
 
 test("API key → generate unique base62 ids; ordinal decodes back", async ({ request }) => {

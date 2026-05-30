@@ -6,10 +6,10 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SPEC } from "../src/lib/openapi.js";
+import { SPEC, specWithBase, DEFAULT_SITE } from "../src/lib/openapi.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "clients");
-const BASE = SPEC.servers[0].url;                       // https://puid.dev/api
+const BASE = specWithBase(process.env.PUID_BASE_URL || DEFAULT_SITE).servers[0].url; // https://puid.dev/api
 const AUTH = SPEC.components.securitySchemes.ApiKeyAuth.name; // X-API-Key
 
 // Each SDK: generate(n) and ordinal(puid). Auth via the X-API-Key header, read

@@ -1,49 +1,46 @@
 // openapi.js — THE single source of truth for the PUID API surface.
 //
 // A real OpenAPI 3.1 document as a pure JS object (no Node imports), so it can be:
-//   - served live by the Worker at /api/openapi.json
+//   - served live by the Worker at /api/openapi.json (servers[0].url is rewritten
+//     to the runtime base URL — env PUID_BASE_URL, else the request origin — so
+//     "Try it out" works locally AND in production)
 //   - rendered as interactive docs at /docs (Swagger UI)
 //   - turned into openapi.yaml / openapi.json files (tools/gen-openapi.mjs)
 //   - used to generate all 20 SDKs (tools/gen-clients.mjs)
-// One description, zero drift. The API lives under puid.dev/api; the marketing
-// site, docs, login and dashboard live at puid.dev.
+//
+// Only the two real endpoints are documented: generate + ordinal.
 
-const SITE = "https://puid.dev";
-const API = SITE + "/api";
+export const DEFAULT_SITE = "https://puid.dev";
 
 export const SPEC = {
   openapi: "3.1.0",
   info: {
     title: "PUID API",
     version: "1.0.0",
-    summary: "Probably Unique IDentifier — a counter wearing a trench coat.",
+    summary: "Probably Unique IDentifier.",
     description:
-      "Returns identifiers that are provably 100% collision-free (a bijection over a 128-bit space — better than UUIDv4, which is only probabilistic) and look completely random. They are, in fact, a sequential counter. Rate limited to one request per second. Please do not use this in production.",
-    contact: { name: "PUID", url: SITE },
-    license: { name: "MIT" },
+      "Two endpoints: generate identifiers, and decode one back to its ordinal. Authenticate with an API key (X-API-Key). Rate limited to one request per second.",
+    contact: { name: "PUID", url: DEFAULT_SITE },
+    license: { name: "AGPL-3.0" },
   },
-  servers: [{ url: API, description: "production API (one request per second, per account)" }],
-  security: [{ ApiKeyAuth: [] }, { OAuth2: ["puid:generate"] }],
-  tags: [
-    { name: "ids", description: "Get and decode identifiers" },
-    { name: "billing", description: "Plans and metrics" },
-    { name: "oauth2", description: "Authorize third-party apps" },
-  ],
+  servers: [{ url: DEFAULT_SITE + "/api", description: "API base (one request per second, per account)" }],
+  security: [{ ApiKeyAuth: [] }],
+  tags: [{ name: "ids", description: "Get and decode identifiers" }],
   paths: {
     "/v1/ids": {
       get: {
         tags: ["ids"],
         operationId: "generate",
         summary: "Generate 1 to 10 PUIDs",
-        description: "Returns between 1 and 10 identifiers. Rate limited to one request per second. Subject to a daily quota on the free plan.",
+        description: "Returns between 1 and 10 identifiers. Rate limited to one request per second. Subject to a daily quota.",
         parameters: [
           { name: "n", in: "query", required: false, description: "How many ids to generate (1-10).", schema: { type: "integer", minimum: 1, maximum: 10, default: 1 } },
         ],
         responses: {
-          "200": { description: "A batch of fresh, guaranteed-unique, suspiciously-sequential ids.", content: { "application/json": { schema: { $ref: "#/components/schemas/IdsResponse" } } } },
+          "200": { description: "A batch of fresh, guaranteed-unique ids.", content: { "application/json": { schema: { $ref: "#/components/schemas/IdsResponse" } } } },
           "401": { description: "Missing or invalid credentials.", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
-          "402": { description: "Daily quota exceeded. Upgrade to count higher.", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
-          "429": { description: "One request per second. The whole brand.", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
+          "402": { description: "Daily quota exceeded.", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
+          "429": { description: "One request per second.", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
         },
       },
     },
@@ -52,39 +49,18 @@ export const SPEC = {
         tags: ["ids"],
         operationId: "ordinal",
         summary: "Decode a PUID back to its ordinal",
-        description: "The confession booth. Decrypts a PUID to reveal the counter value it always was.",
-        security: [{ ApiKeyAuth: [] }, { OAuth2: ["puid:ordinal"] }],
+        description: "Decodes a PUID to reveal the counter value it encodes.",
         parameters: [{ name: "puid", in: "path", required: true, description: "A PUID returned by /v1/ids.", schema: { type: "string", pattern: "^[0-9A-Za-z]{1,22}$" } }],
         responses: {
-          "200": { description: "The truth.", content: { "application/json": { schema: { $ref: "#/components/schemas/OrdinalResponse" } } } },
+          "200": { description: "The decoded ordinal.", content: { "application/json": { schema: { $ref: "#/components/schemas/OrdinalResponse" } } } },
           "400": { description: "Not a valid PUID.", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } },
         },
       },
-    },
-    "/metrics": {
-      get: { tags: ["billing"], operationId: "metrics", summary: "Total ids ever issued", description: "We leak our cumulative issuance count on purpose.", security: [], responses: { "200": { description: "Competitive intelligence, free of charge.", content: { "application/json": { schema: { type: "object", properties: { ids_ever_issued: { type: "string" }, note: { type: "string" } } } } } } } },
-    },
-    "/pricing": {
-      get: { tags: ["billing"], operationId: "pricing", summary: "Plans", description: "Yes, we charge money to make a counter count faster.", security: [], responses: { "200": { description: "Tiers.", content: { "application/json": { schema: { type: "object" } } } } } },
-    },
-    "/oauth/register": {
-      post: { tags: ["oauth2"], operationId: "registerClient", summary: "Dynamic client registration", security: [], requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["redirect_uris"], properties: { client_name: { type: "string" }, redirect_uris: { type: "array", items: { type: "string" } } } } } } }, responses: { "200": { description: "A registered OAuth2 client.", content: { "application/json": { schema: { type: "object" } } } } } },
-    },
-    "/oauth/token": {
-      post: { tags: ["oauth2"], operationId: "token", summary: "OAuth2 token endpoint", description: "Supports authorization_code (PKCE), refresh_token, and client_credentials grants.", security: [], requestBody: { required: true, content: { "application/x-www-form-urlencoded": { schema: { type: "object", properties: { grant_type: { type: "string" }, code: { type: "string" }, code_verifier: { type: "string" }, client_id: { type: "string" }, client_secret: { type: "string" }, redirect_uri: { type: "string" }, refresh_token: { type: "string" }, scope: { type: "string" } } } } } }, responses: { "200": { description: "An access token (and maybe a refresh token).", content: { "application/json": { schema: { type: "object" } } } }, "400": { description: "invalid_grant", content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } } } } },
     },
   },
   components: {
     securitySchemes: {
       ApiKeyAuth: { type: "apiKey", in: "header", name: "X-API-Key", description: "A team API key (puid_live_...). Mint one in the dashboard after signing in with Google or Microsoft." },
-      OAuth2: {
-        type: "oauth2",
-        description: "Authorize a third-party app to call PUID on a team's behalf.",
-        flows: {
-          authorizationCode: { authorizationUrl: SITE + "/oauth/authorize", tokenUrl: API + "/oauth/token", refreshUrl: API + "/oauth/token", scopes: { "puid:generate": "Generate ids", "puid:ordinal": "Decode ids to ordinals" } },
-          clientCredentials: { tokenUrl: API + "/oauth/token", scopes: { "puid:generate": "Generate ids", "puid:ordinal": "Decode ids to ordinals" } },
-        },
-      },
     },
     schemas: {
       IdsResponse: { type: "object", required: ["ids", "count"], properties: { ids: { type: "array", items: { type: "string" } }, count: { type: "integer" }, quota: { type: "object", properties: { used: { type: "integer" }, limit: { type: "integer" } } }, warning: { type: "string" } } },
@@ -93,6 +69,11 @@ export const SPEC = {
     },
   },
 };
+
+// Return the spec with servers[0].url rewritten to `${base}/api`.
+export function specWithBase(base) {
+  return { ...SPEC, servers: [{ url: base.replace(/\/$/, "") + "/api", description: SPEC.servers[0].description }] };
+}
 
 // Pure, always-valid YAML emitter (quotes every string + key). Shared by the
 // Worker (serves /api/openapi.yaml) and tools/gen-openapi.mjs (writes the file).

@@ -9,7 +9,7 @@
 import { encodePuid, decodePuid } from "../puid.js";
 import { PROVIDERS, buildAuthUrl, exchangeAndProfile } from "./oauth_login.js";
 import { dispatch, allocateOrdinals, rateLimit } from "./data.js";
-import { SPEC, toYaml } from "../openapi.js";
+import { toYaml, specWithBase } from "../openapi.js";
 
 const MAX_PER_REQUEST = 10;
 
@@ -133,8 +133,11 @@ async function handleApi(request, env, origin, p, url) {
   const API = origin + "/api";
   const needSession = async () => sessionFromRequest(env, request);
 
-  if (p === "/openapi.json") return json(SPEC);
-  if (p === "/openapi.yaml") return new Response(toYaml(SPEC), { headers: { "content-type": "application/yaml" } });
+  // Rewrite the server URL to the runtime base so "Try it out" works locally and
+  // in prod: env PUID_BASE_URL if set, otherwise the current request origin.
+  const baseUrl = env.PUID_BASE_URL || origin;
+  if (p === "/openapi.json") return json(specWithBase(baseUrl));
+  if (p === "/openapi.yaml") return new Response(toYaml(specWithBase(baseUrl)), { headers: { "content-type": "application/yaml" } });
   if (p === "/.well-known/oauth-authorization-server") {
     return json({
       issuer: origin, authorization_endpoint: `${origin}/oauth/authorize`, token_endpoint: `${API}/oauth/token`,
