@@ -151,6 +151,19 @@ test("reusable join code: join works, rotate kills old, revoke disables", async 
   await owner.dispose(); await bob.dispose(); await late.dispose();
 });
 
+test("sitemap, robots, and llms.txt are served for discovery", async ({ request }) => {
+  const xml = await (await request.get("/sitemap.xml")).text();
+  expect(xml).toContain('hreflang="es"');
+  expect(xml).toContain('hreflang="x-default"');
+  expect(xml).toContain("/why?lang=ja"); // every page × every language
+  const robots = await (await request.get("/robots.txt")).text();
+  expect(robots).toContain("Sitemap:");
+  expect(robots).toContain("Disallow: /dashboard");
+  const llms = await (await request.get("/llms.txt")).text();
+  expect(llms).toContain("# PUID");
+  expect(llms).toContain("/api/openapi.json");
+});
+
 test("the paywall upgrade page pitches hiring the engineer", async ({ request }) => {
   const html = await (await request.get("/upgrade")).text();
   expect(html).toContain("linkedin.com/in/jtwebman");
