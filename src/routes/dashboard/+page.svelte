@@ -21,7 +21,8 @@
 	let keys = $state([]);
 	let grants = $state([]);
 
-	const api = (p, o) => fetch('/api' + p, { credentials: 'same-origin', ...o });
+	const api = (p, o) => fetch('/dashboard/api' + p, { credentials: 'same-origin', ...o }); // dashboard data (session)
+	const svc = (p, o) => fetch('/api' + p, { credentials: 'same-origin', ...o }); // public service (API key)
 	const post = (p, body) => api(p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) });
 
 	async function load() {
@@ -53,12 +54,12 @@
 	async function gen() {
 		if (!apiKey) { alert('Mint an API key first.'); return; }
 		genErr = '';
-		const res = await api('/v1/ids?n=' + n, { headers: { 'X-API-Key': apiKey } });
+		const res = await svc('/v1/ids?n=' + n, { headers: { 'X-API-Key': apiKey } });
 		const b = await res.json();
 		if (res.status !== 200) { genErr = JSON.stringify(b); ids = []; ordinals = []; return; }
 		ids = b.ids; ordinals = [];
 		for (const id of b.ids) {
-			const o = await (await api('/v1/ordinal/' + id, { headers: { 'X-API-Key': apiKey } })).json();
+			const o = await (await svc('/v1/ordinal/' + id, { headers: { 'X-API-Key': apiKey } })).json();
 			ordinals = [...ordinals, { id, ordinal: o.ordinal }];
 		}
 	}

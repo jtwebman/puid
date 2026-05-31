@@ -121,9 +121,13 @@ export async function handle(request, env, url) {
     return new Response(null, { status: 302, headers: { location: dest } });
   }
 
-  // ---- JSON API ----
+  // ---- public service API (API key / OAuth2 bearer) ----
   if (path === "/api" || path.startsWith("/api/")) {
     return handleApi(request, env, origin, path.slice(4) || "/", url);
+  }
+  // ---- dashboard API (session cookie) ----
+  if (path === "/dashboard/api" || path.startsWith("/dashboard/api/")) {
+    return handleDashboard(request, env, path.slice("/dashboard/api".length) || "/", url);
   }
 
   return null; // let SvelteKit render a page
@@ -131,7 +135,6 @@ export async function handle(request, env, url) {
 
 async function handleApi(request, env, origin, p, url) {
   const API = origin + "/api";
-  const needSession = async () => sessionFromRequest(env, request);
 
   // Rewrite the server URL to the runtime base so "Try it out" works locally and
   // in prod: env PUID_BASE_URL if set, otherwise the current request origin.
@@ -186,7 +189,14 @@ async function handleApi(request, env, origin, p, url) {
     return json(data, status);
   }
 
-  // dashboard AJAX (session cookie)
+  return json({ error: "not_found", api: true }, 404);
+}
+
+// Dashboard API — session-cookie auth (Google/Microsoft login). Part of the
+// dashboard/site, not the public service. `p` is the path after /dashboard/api.
+async function handleDashboard(request, env, p, url) {
+  const needSession = async () => sessionFromRequest(env, request);
+
   if (p === "/me") {
     const s = await needSession(); if (!s) return json({ error: "not_logged_in" }, 401);
     return json({ user_id: s.user_id, active_account_id: s.active_account_id, email: s.email, name: s.name });
@@ -268,7 +278,7 @@ async function handleApi(request, env, origin, p, url) {
     return json(data);
   }
 
-  return json({ error: "not_found", api: true }, 404);
+  return json({ error: "not_found", dashboard: true }, 404);
 }
 
 function esc(s) { return String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }

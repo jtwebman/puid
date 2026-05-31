@@ -68,7 +68,7 @@ test("join code: generate, second user joins, rotate kills old, revoke disables"
   const bob = await bobCtx.newPage();
   await devLogin(bob, `bob-${uniq()}@example.com`, `/join/${code}`);
   await expect(bob).toHaveURL(/\/dashboard\?joined=/);
-  const bobAccts = await (await bob.request.get("/api/accounts")).json();
+  const bobAccts = await (await bob.request.get("/dashboard/api/accounts")).json();
   expect(bobAccts.accounts.length).toBeGreaterThanOrEqual(2);
 
   await owner.getByTestId("rotate-btn").click();

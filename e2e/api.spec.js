@@ -10,7 +10,7 @@ const uniq = () => `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 // dev-login (sets session cookie on the context) then mint an API key.
 async function keyFor(ctx, email) {
   await ctx.get(`/auth/dev-login?email=${encodeURIComponent(email)}&next=/dashboard`);
-  const r = await ctx.post("/api/team/keys", { data: {} });
+  const r = await ctx.post("/dashboard/api/team/keys", { data: {} });
   return (await r.json()).api_key;
 }
 
@@ -65,9 +65,9 @@ test("one request per second (429 on immediate retry)", async ({ request }) => {
 
 test("daily quota returns 402 when exceeded", async ({ request }) => {
   await keyFor(request, `quota-${uniq()}@example.com`); // also establishes the session
-  await request.get("/api/dev/seed-usage?n=1000");
+  await request.get("/dashboard/api/dev/seed-usage?n=1000");
   // a fresh key on the same account, then generate → over quota
-  const key = (await (await request.post("/api/team/keys", { data: {} })).json()).api_key;
+  const key = (await (await request.post("/dashboard/api/team/keys", { data: {} })).json()).api_key;
   const r = await request.get("/api/v1/ids?n=1", { headers: { "X-API-Key": key } });
   expect(r.status()).toBe(402);
 });
@@ -75,17 +75,17 @@ test("daily quota returns 402 when exceeded", async ({ request }) => {
 test("usage events are logged per request", async ({ request }) => {
   const key = await keyFor(request, `usage-${uniq()}@example.com`);
   await request.get("/api/v1/ids?n=4", { headers: { "X-API-Key": key } });
-  const usage = await (await request.get("/api/usage")).json();
+  const usage = await (await request.get("/dashboard/api/usage")).json();
   expect(usage.total).toBeGreaterThanOrEqual(4);
 });
 
 test("API keys: create, list, and revoke (revoked key stops working)", async ({ request }) => {
   await request.get(`/auth/dev-login?email=keys-${uniq()}@example.com&next=/dashboard`);
-  const k1 = await (await request.post("/api/team/keys", { data: { label: "one" } })).json();
-  await request.post("/api/team/keys", { data: { label: "two" } });
-  expect((await (await request.get("/api/keys")).json()).keys.length).toBe(2);
-  await request.post("/api/keys/revoke", { data: { key_id: k1.id } });
-  expect((await (await request.get("/api/keys")).json()).keys.length).toBe(1);
+  const k1 = await (await request.post("/dashboard/api/team/keys", { data: { label: "one" } })).json();
+  await request.post("/dashboard/api/team/keys", { data: { label: "two" } });
+  expect((await (await request.get("/dashboard/api/keys")).json()).keys.length).toBe(2);
+  await request.post("/dashboard/api/keys/revoke", { data: { key_id: k1.id } });
+  expect((await (await request.get("/dashboard/api/keys")).json()).keys.length).toBe(1);
   // the revoked key no longer authenticates
   expect((await request.get("/api/v1/ids?n=1", { headers: { "X-API-Key": k1.api_key } })).status()).toBe(401);
 });
@@ -105,11 +105,11 @@ test("OAuth authorization_code: app gets delegated access; owner can see + revok
   // the app generates ids on the team's behalf
   expect((await request.get("/api/v1/ids?n=1", { headers: { authorization: `Bearer ${tok.access_token}` } })).status()).toBe(200);
   // the owner sees the grant in their dashboard
-  const grants = await (await request.get("/api/grants")).json();
+  const grants = await (await request.get("/dashboard/api/grants")).json();
   expect(grants.grants.some((g) => g.client_id === reg.client_id && g.name === "My App")).toBe(true);
   // ...and revokes it; the token immediately stops working
-  await request.post("/api/grants/revoke", { data: { client_id: reg.client_id } });
-  expect((await (await request.get("/api/grants")).json()).grants.length).toBe(0);
+  await request.post("/dashboard/api/grants/revoke", { data: { client_id: reg.client_id } });
+  expect((await (await request.get("/dashboard/api/grants")).json()).grants.length).toBe(0);
   expect((await request.get("/api/v1/ids?n=1", { headers: { authorization: `Bearer ${tok.access_token}` } })).status()).toBe(401);
 });
 
@@ -128,25 +128,25 @@ test("OAuth2 client_credentials → bearer token generates ids", async ({ reques
 test("reusable join code: join works, rotate kills old, revoke disables", async ({ playwright, baseURL }) => {
   const owner = await pwRequest.newContext({ baseURL });
   await owner.get(`/auth/dev-login?email=owner-${uniq()}@example.com&next=/dashboard`);
-  const code1 = (await (await owner.post("/api/team/join-code/rotate", { data: {} })).json()).join_code;
+  const code1 = (await (await owner.post("/dashboard/api/team/join-code/rotate", { data: {} })).json()).join_code;
   expect(code1).toMatch(/^join_/);
 
   const bob = await pwRequest.newContext({ baseURL });
   await bob.get(`/auth/dev-login?email=bob-${uniq()}@example.com&next=/dashboard`);
   await bob.get(`/join/${code1}`); // reusable
-  const bobAccts = await (await bob.get("/api/accounts")).json();
+  const bobAccts = await (await bob.get("/dashboard/api/accounts")).json();
   expect(bobAccts.accounts.length).toBeGreaterThanOrEqual(2);
 
-  const code2 = (await (await owner.post("/api/team/join-code/rotate", { data: {} })).json()).join_code;
+  const code2 = (await (await owner.post("/dashboard/api/team/join-code/rotate", { data: {} })).json()).join_code;
   expect(code2).not.toBe(code1);
   const late = await pwRequest.newContext({ baseURL });
   await late.get(`/auth/dev-login?email=late-${uniq()}@example.com&next=/dashboard`);
   await late.get(`/join/${code1}`); // old code, dead
-  const lateAccts = await (await late.get("/api/accounts")).json();
+  const lateAccts = await (await late.get("/dashboard/api/accounts")).json();
   expect(lateAccts.accounts.length).toBe(1);
 
-  await owner.post("/api/team/join-code/revoke", { data: {} });
-  const settings = await (await owner.get("/api/team/settings")).json();
+  await owner.post("/dashboard/api/team/join-code/revoke", { data: {} });
+  const settings = await (await owner.get("/dashboard/api/team/settings")).json();
   expect(settings.join_code).toBeFalsy();
   await owner.dispose(); await bob.dispose(); await late.dispose();
 });
