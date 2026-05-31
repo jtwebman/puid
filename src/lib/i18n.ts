@@ -123,6 +123,32 @@ export interface Content {
   why_b3: string; // contains HTML (rendered via {@html})
   why_h4: string;
   why_b4: string; // contains HTML
+  // landing marketing — straight-faced; the joke lives only on /why and /upgrade.
+  // English-only is fine: these fall back to English for locales that omit them.
+  hero_note: string;
+  stat_collisions_n: string; stat_collisions_l: string;
+  stat_keyspace_n: string; stat_keyspace_l: string;
+  stat_uptime_n: string; stat_uptime_l: string;
+  stat_sdks_n: string; stat_sdks_l: string;
+  features_title: string;
+  features_sub: string;
+  feat_unique_t: string; feat_unique_b: string;
+  feat_random_t: string; feat_random_b: string;
+  feat_edge_t: string; feat_edge_b: string;
+  feat_oauth_t: string; feat_oauth_b: string;
+  feat_sdk_t: string; feat_sdk_b: string;
+  feat_team_t: string; feat_team_b: string;
+  how_title: string;
+  how_sub: string;
+  step1_t: string; step1_b: string;
+  step2_t: string; step2_b: string;
+  step3_t: string; step3_b: string;
+  loved_title: string;
+  quote1: string; name1: string; role1: string;
+  quote2: string; name2: string; role2: string;
+  quote3: string; name3: string; role3: string;
+  cta_title: string;
+  cta_sub: string;
 }
 
 export type Messages = Chrome & Content;
@@ -132,7 +158,7 @@ const M: Record<Locale, Chrome & Partial<Content>> = {
     hero_sub: "The Provably Unique ID the world is missing!",
     hero_desc:
       "UUIDs gamble on uniqueness — there's always a nonzero chance two collide. PUID harnesses a proprietary, patent-pending uniqueness engine to deliver deterministic, collision-free identifiers at web scale. Cloud-native, enterprise-grade, and provably unique by design. The how is our secret sauce.",
-    get_api_key: "Get an API key",
+    get_api_key: "Sign up free",
     nav_docs: "API Docs",
     nav_dashboard: "Dashboard",
     nav_metrics: "Metrics",
@@ -216,6 +242,49 @@ const M: Record<Locale, Chrome & Partial<Content>> = {
     why_b3: "The cipher also runs backwards. So <code>GET /api/v1/ordinal/&lt;id&gt;</code> turns any PUID back into its counter value. That proves the id <code>64qAN39Gj...</code> was really just #1. It also means anyone can decode an id and read its number, and that number is how many ids we had handed out when it was made. So no, do not use this in production.",
     why_h4: "Why build all this for a counter?",
     why_b4: "Mostly for fun, and to see how far the joke would go. There is a full OAuth2 server, sign in with Google and Microsoft, teams, 20 SDKs, a Postgres extension, 20 languages, and three test suites. All of it just to return <code>i++</code> in a nicer wrapper. If you like this kind of thing, <a class=\"text-indigo-600 dark:text-indigo-400\" href=\"https://bio.jtwebman.com\" target=\"_blank\" rel=\"noopener\">follow me on my socials</a>.",
+    hero_note: "Free forever tier · No credit card required · 20 official SDKs",
+    stat_collisions_n: "0",
+    stat_collisions_l: "collisions, ever",
+    stat_keyspace_n: "2¹²⁸",
+    stat_keyspace_l: "identifier keyspace",
+    stat_uptime_n: "99.99%",
+    stat_uptime_l: "uptime SLA",
+    stat_sdks_n: "20",
+    stat_sdks_l: "official SDKs",
+    features_title: "Everything you need to never collide again",
+    features_sub: "A complete identifier platform — from the math at the core to the SDKs, teams, and analytics around it.",
+    feat_unique_t: "Provably collision-free",
+    feat_unique_b: "Not “astronomically unlikely.” Mathematically impossible. Every id is guaranteed distinct by proof, not probability.",
+    feat_random_t: "Opaque & URL-safe",
+    feat_random_b: "High-entropy, base62 identifiers that give nothing away — not your data, not your scale, not each other.",
+    feat_edge_t: "Served from the edge",
+    feat_edge_b: "Running on Cloudflare’s global network, close to your users in hundreds of cities. Fast everywhere, by default.",
+    feat_oauth_t: "OAuth2 & SSO built in",
+    feat_oauth_b: "A full authorization server. Sign in with Google, delegate scoped access to apps, and revoke it any time.",
+    feat_sdk_t: "20 official SDKs",
+    feat_sdk_b: "Generated from our OpenAPI spec and versioned with the API — plus a native PostgreSQL extension for table ids.",
+    feat_team_t: "Built for teams",
+    feat_team_b: "Multi-tenant accounts, usage analytics, rotatable API keys, and reusable revocable join codes.",
+    how_title: "Up and running in 60 seconds",
+    how_sub: "No procurement, no sales call. Sign in and ship.",
+    step1_t: "Create your account",
+    step1_b: "Sign in with Google. No passwords to manage, no credit card to enter.",
+    step2_t: "Mint an API key",
+    step2_b: "Generate a key in the dashboard. Rotate or revoke it whenever you like.",
+    step3_t: "Call the API",
+    step3_b: "One request returns up to 10 ids. Drop in an SDK for your language and you’re done.",
+    loved_title: "Engineers who care about correctness",
+    quote1: "We swapped out UUIDv4 and haven’t seen a single collision since. Not one.",
+    name1: "Dana R.",
+    role1: "Staff Engineer",
+    quote2: "Finally, identifiers I can prove are unique in a code review instead of hand-waving at probability.",
+    name2: "Marcus L.",
+    role2: "Backend Lead",
+    quote3: "The Postgres extension dropped into our schema in an afternoon. It just works.",
+    name3: "Priya N.",
+    role3: "Platform Engineer",
+    cta_title: "Stop gambling on uniqueness.",
+    cta_sub: "Join the teams generating provably-unique identifiers today.",
     language: "Language",
     theme: "Theme",
     theme_light: "Light",

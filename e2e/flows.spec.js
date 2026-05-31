@@ -9,7 +9,8 @@ const devLogin = (page, email, next = "/dashboard") =>
 
 test("landing page renders with theme + language controls", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("h1")).toHaveText("PUID");
+  await expect(page.locator("h1")).toContainText("Provably Unique");
+  await expect(page.getByRole("link", { name: "Sign up free" }).first()).toBeVisible();
   await expect(page.getByTestId("theme-select")).toBeVisible();
   await expect(page.getByTestId("language-select")).toBeVisible();
 });
