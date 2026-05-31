@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	const m = $derived(page.data.m);
+	const providers = $derived(page.data.providers || {});
 
 	let loaded = $state(false);
 	let loggedIn = $state(false);
@@ -86,8 +87,8 @@
 		<div class={cardCls}>
 			<p>{m.signin_prompt}</p>
 			<div class="mt-4 flex flex-wrap gap-3">
-				<a href="/auth/login/google?next=/dashboard" class={btnPrimary}>{m.signin_google}</a>
-				<a href="/auth/login/microsoft?next=/dashboard" class={btn}>{m.signin_microsoft}</a>
+				{#if providers.google}<a href="/auth/login/google?next=/dashboard" class={btnPrimary}>{m.signin_google}</a>{/if}
+				{#if providers.microsoft}<a href="/auth/login/microsoft?next=/dashboard" class={btn}>{m.signin_microsoft}</a>{/if}
 			</div>
 			<p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400">{m.no_password}</p>
 		</div>

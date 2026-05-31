@@ -64,6 +64,7 @@ export async function handle(request, env, url) {
   if (path.startsWith("/auth/login/")) {
     const provider = path.split("/").pop();
     if (!PROVIDERS[provider]) return json({ error: "unknown_provider", supported: Object.keys(PROVIDERS) }, 404);
+    if (!env[PROVIDERS[provider].clientIdEnv]) return json({ error: "provider_not_configured", provider }, 404);
     const state = crypto.randomUUID();
     const next = url.searchParams.get("next") || "/dashboard";
     return new Response(null, { status: 302, headers: {
