@@ -35,6 +35,13 @@ test("the /why page is translated too", async ({ page }) => {
   await expect(page.locator("h1")).toHaveText("Vale, es una broma.");
 });
 
+test("pages expose canonical + hreflang alternates in <head>", async ({ page }) => {
+  await page.goto("/why");
+  await expect(page.locator('head link[rel="canonical"]')).toHaveAttribute("href", /\/why$/);
+  await expect(page.locator('head link[hreflang="ja"]')).toHaveAttribute("href", /\/why\?lang=ja$/);
+  await expect(page.locator('head link[hreflang="x-default"]')).toHaveCount(1);
+});
+
 test("sign in and mint an API key", async ({ page }) => {
   await devLogin(page, `owner-${uniq()}@example.com`);
   await expect(page.getByTestId("email")).toContainText("@example.com");

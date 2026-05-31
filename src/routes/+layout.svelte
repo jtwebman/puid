@@ -1,9 +1,24 @@
 <script>
 	import '../app.css';
+	import { page } from '$app/state';
 	import ThemeToggle from '$lib/ThemeToggle.svelte';
 	import LanguageSwitcher from '$lib/LanguageSwitcher.svelte';
 	let { data, children } = $props();
+
+	// Localized URL of the CURRENT page (English = canonical, no query param).
+	const altUrl = (code) =>
+		page.url.origin + page.url.pathname + (code === 'en' ? '' : '?lang=' + code);
+	const canonical = $derived(altUrl(data.locale));
+	const codes = $derived(Object.keys(data.locales));
 </script>
+
+<svelte:head>
+	<link rel="canonical" href={canonical} />
+	{#each codes as code (code)}
+		<link rel="alternate" hreflang={code} href={altUrl(code)} />
+	{/each}
+	<link rel="alternate" hreflang="x-default" href={altUrl('en')} />
+</svelte:head>
 
 <div class="min-h-screen">
 	<header
