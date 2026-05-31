@@ -95,7 +95,7 @@
 			</div>
 			{#if apiKey}<pre data-testid="key-out" class="mt-3 overflow-auto rounded-lg bg-zinc-100 p-3 font-mono text-sm dark:bg-zinc-950">{apiKey}
 
-Save it — we hash it and cannot show it again.</pre>{/if}
+{m.key_saved}</pre>{/if}
 			{#if keys.length}
 				<table class="mt-4 w-full text-sm" data-testid="keys">
 					<tbody>
@@ -103,7 +103,7 @@ Save it — we hash it and cannot show it again.</pre>{/if}
 							<tr class="border-b border-zinc-200 dark:border-zinc-800">
 								<td class="py-1.5">{k.label}</td>
 								<td class="font-mono text-zinc-500 dark:text-zinc-400">…{k.hint}</td>
-								<td class="text-right"><button class="text-sm text-red-600 hover:underline dark:text-red-400" data-testid="revoke-key" onclick={() => revokeKey(k.id)}>Revoke</button></td>
+								<td class="text-right"><button class="text-sm text-red-600 hover:underline dark:text-red-400" data-testid="revoke-key" onclick={() => revokeKey(k.id)}>{m.revoke_action}</button></td>
 							</tr>
 						{/each}
 					</tbody>
@@ -112,8 +112,8 @@ Save it — we hash it and cannot show it again.</pre>{/if}
 		</div>
 
 		<div class="{cardCls} mt-4">
-			<h3 class="mb-2 font-semibold">Authorized apps</h3>
-			<p class="text-sm text-zinc-500 dark:text-zinc-400">Apps you've granted permission to generate ids on this account's behalf (via OAuth). Revoke any time.</p>
+			<h3 class="mb-2 font-semibold">{m.authorized_apps}</h3>
+			<p class="text-sm text-zinc-500 dark:text-zinc-400">{m.apps_desc}</p>
 			{#if grants.length}
 				<table class="mt-3 w-full text-sm" data-testid="grants">
 					<tbody>
@@ -121,22 +121,22 @@ Save it — we hash it and cannot show it again.</pre>{/if}
 							<tr class="border-b border-zinc-200 dark:border-zinc-800">
 								<td class="py-1.5">{g.name || g.client_id}</td>
 								<td class="font-mono text-zinc-500 dark:text-zinc-400">{g.scope}</td>
-								<td class="text-right"><button class="text-sm text-red-600 hover:underline dark:text-red-400" data-testid="revoke-grant" onclick={() => revokeGrant(g.client_id)}>Revoke</button></td>
+								<td class="text-right"><button class="text-sm text-red-600 hover:underline dark:text-red-400" data-testid="revoke-grant" onclick={() => revokeGrant(g.client_id)}>{m.revoke_action}</button></td>
 							</tr>
 						{/each}
 					</tbody>
 				</table>
-			{:else}<p class="mt-3 text-sm text-zinc-400 dark:text-zinc-500">No apps authorized.</p>{/if}
+			{:else}<p class="mt-3 text-sm text-zinc-400 dark:text-zinc-500">{m.no_apps}</p>{/if}
 		</div>
 
 
 		<div class="{cardCls} mt-4">
 			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-				<h3 class="font-semibold">Usage <span class="text-sm font-normal text-zinc-500 dark:text-zinc-400">(total {usage?.total ?? 0})</span></h3>
+				<h3 class="font-semibold">{m.usage_title} <span class="text-sm font-normal text-zinc-500 dark:text-zinc-400">({m.usage_total} {usage?.total ?? 0})</span></h3>
 				<select value={usageBucket} onchange={(e) => { usageBucket = e.currentTarget.value; loadUsage(); }} class="rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 text-sm dark:border-zinc-700">
-					<option value="minute">Per minute</option>
-					<option value="hour">Per hour</option>
-					<option value="day">Per day</option>
+					<option value="minute">{m.bucket_minute}</option>
+					<option value="hour">{m.bucket_hour}</option>
+					<option value="day">{m.bucket_day}</option>
 				</select>
 			</div>
 			{#if usage?.points?.length}
@@ -145,7 +145,7 @@ Save it — we hash it and cannot show it again.</pre>{/if}
 						<div class="flex-1 rounded-t bg-indigo-500/70" style="height:{maxPoint ? Math.max(3, (p.count / maxPoint) * 80) : 3}px" title={new Date(p.t).toLocaleString() + ': ' + p.count}></div>
 					{/each}
 				</div>
-			{:else}<p class="text-sm text-zinc-500 dark:text-zinc-400">No ids generated yet.</p>{/if}
+			{:else}<p class="text-sm text-zinc-500 dark:text-zinc-400">{m.no_usage}</p>{/if}
 		</div>
 
 		<div class="{cardCls} mt-4">
@@ -153,8 +153,8 @@ Save it — we hash it and cannot show it again.</pre>{/if}
 			{#if role === 'owner'}
 				<p class="text-sm text-zinc-500 dark:text-zinc-400">{m.join_intro}</p>
 				{#if joinCode}
-					<pre data-testid="join-link" class="mt-3 overflow-auto rounded-lg bg-zinc-100 p-3 font-mono text-sm dark:bg-zinc-950">Join code: {joinCode}
-Join link: {joinLink}</pre>
+					<pre data-testid="join-link" class="mt-3 overflow-auto rounded-lg bg-zinc-100 p-3 font-mono text-sm dark:bg-zinc-950">{m.join_code_label} {joinCode}
+{m.join_link_label} {joinLink}</pre>
 					<div class="mt-3 flex flex-wrap gap-2">
 						<a href={mailto} data-testid="join-mailto" class={btnPrimary}>{m.share_email}</a>
 						<button class={btn} data-testid="rotate-btn" onclick={rotateCode}>{m.rotate}</button>

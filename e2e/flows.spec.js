@@ -30,6 +30,11 @@ test("server renders Spanish for ?lang=es (Accept-Language / dropdown drive this
   await expect(page.locator("body")).toContainText("Precios"); // pricing → es
 });
 
+test("the /why page is translated too", async ({ page }) => {
+  await page.goto("/why?lang=es");
+  await expect(page.locator("h1")).toHaveText("Vale, es una broma.");
+});
+
 test("sign in and mint an API key", async ({ page }) => {
   await devLogin(page, `owner-${uniq()}@example.com`);
   await expect(page.getByTestId("email")).toContainText("@example.com");
