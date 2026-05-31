@@ -30,15 +30,11 @@ test("server renders Spanish for ?lang=es (Accept-Language / dropdown drive this
   await expect(page.locator("body")).toContainText("Precios"); // pricing → es
 });
 
-test("sign in, mint a key, generate ids, decode them", async ({ page }) => {
+test("sign in and mint an API key", async ({ page }) => {
   await devLogin(page, `owner-${uniq()}@example.com`);
   await expect(page.getByTestId("email")).toContainText("@example.com");
   await page.getByTestId("mint-btn").click();
   await expect(page.getByTestId("key-out")).toContainText("puid_live_");
-  await page.getByTestId("n-input").fill("3");
-  await page.getByTestId("gen-btn").click();
-  await expect(page.getByTestId("ids-out")).toBeVisible();
-  await expect(page.getByTestId("ordinals")).toContainText("#");
 });
 
 test("dashboard lists and revokes API keys", async ({ page }) => {

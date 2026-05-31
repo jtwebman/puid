@@ -11,10 +11,6 @@
 	let activeId = $state('');
 	let role = $state('member');
 	let apiKey = $state(null);
-	let n = $state(3);
-	let ids = $state([]);
-	let ordinals = $state([]);
-	let genErr = $state('');
 	let joinCode = $state(null);
 	let members = $state([]);
 	let usage = $state(null);
@@ -23,7 +19,6 @@
 	let grants = $state([]);
 
 	const api = (p, o) => fetch('/dashboard/api' + p, { credentials: 'same-origin', ...o }); // dashboard data (session)
-	const svc = (p, o) => fetch('/api' + p, { credentials: 'same-origin', ...o }); // public service (API key)
 	const post = (p, body) => api(p, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) });
 
 	async function load() {
@@ -52,18 +47,6 @@
 	async function mintKey() { const r = await (await post('/team/keys', {})).json(); apiKey = r.api_key; await loadKeys(); }
 	async function revokeKey(id) { await post('/keys/revoke', { key_id: id }); if (keys.length === 1) apiKey = null; await loadKeys(); }
 	async function revokeGrant(clientId) { await post('/grants/revoke', { client_id: clientId }); await loadGrants(); }
-	async function gen() {
-		if (!apiKey) { alert('Mint an API key first.'); return; }
-		genErr = '';
-		const res = await svc('/v1/ids?n=' + n, { headers: { 'X-API-Key': apiKey } });
-		const b = await res.json();
-		if (res.status !== 200) { genErr = JSON.stringify(b); ids = []; ordinals = []; return; }
-		ids = b.ids; ordinals = [];
-		for (const id of b.ids) {
-			const o = await (await svc('/v1/ordinal/' + id, { headers: { 'X-API-Key': apiKey } })).json();
-			ordinals = [...ordinals, { id, ordinal: o.ordinal }];
-		}
-	}
 	async function rotateCode() { const r = await (await post('/team/join-code/rotate', {})).json(); joinCode = r.join_code; }
 	async function revokeCode() { await post('/team/join-code/revoke', {}); joinCode = null; }
 
@@ -146,17 +129,6 @@ Save it — we hash it and cannot show it again.</pre>{/if}
 			{:else}<p class="mt-3 text-sm text-zinc-400 dark:text-zinc-500">No apps authorized.</p>{/if}
 		</div>
 
-		<div class="{cardCls} mt-4">
-			<h3 class="mb-2 font-semibold">{m.generate_ids} <span class="text-sm font-normal text-zinc-500 dark:text-zinc-400">{m.one_per_sec}</span></h3>
-			<div class="flex flex-wrap items-center gap-3">
-				{m.how_many}
-				<input data-testid="n-input" type="number" min="1" max="10" bind:value={n} class="w-20 rounded-lg border border-zinc-300 bg-transparent px-2 py-1.5 dark:border-zinc-700" />
-				<button class={btnPrimary} data-testid="gen-btn" onclick={gen}>{m.generate}</button>
-			</div>
-			{#if genErr}<pre class="mt-3 overflow-auto rounded-lg bg-zinc-100 p-3 font-mono text-sm text-red-600 dark:bg-zinc-950">{genErr}</pre>{/if}
-			{#if ids.length}<pre data-testid="ids-out" class="mt-3 overflow-auto rounded-lg bg-zinc-100 p-3 font-mono text-sm dark:bg-zinc-950">{ids.join('\n')}</pre>{/if}
-			{#if ordinals.length}<div data-testid="ordinals" class="mt-2 font-mono text-sm">{#each ordinals as o}<div>{o.id} → #{o.ordinal}</div>{/each}</div>{/if}
-		</div>
 
 		<div class="{cardCls} mt-4">
 			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
