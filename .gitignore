@@ -25,3 +25,10 @@ Cargo.lock
 *.gem
 .bundle/
 vendor/bundle/
+
+# PHP (SDKs)
+vendor/
+composer.lock
+.php-cs-fixer.cache
+.phpunit.result.cache
+.phpunit.cache/

@@ -1,0 +1,55 @@
+{
+  "name": "jtwebman/puid",
+  "description": "Official PHP client for the PUID API — the Provably Unique IDentifier service.",
+  "type": "library",
+  "keywords": [
+    "puid",
+    "uuid",
+    "unique-id",
+    "identifier",
+    "api-client"
+  ],
+  "homepage": "https://puid.dev",
+  "license": "AGPL-3.0-only",
+  "authors": [
+    {
+      "name": "jtwebman"
+    }
+  ],
+  "require": {
+    "php": ">=8.1",
+    "ext-curl": "*",
+    "ext-json": "*"
+  },
+  "require-dev": {
+    "friendsofphp/php-cs-fixer": "^3",
+    "phpstan/phpstan": "^2",
+    "phpunit/phpunit": "^10"
+  },
+  "autoload": {
+    "psr-4": {
+      "Puid\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Puid\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "lint": [
+      "php-cs-fixer fix --dry-run --diff",
+      "phpstan analyse"
+    ],
+    "fix": "php-cs-fixer fix"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {}
+  },
+  "support": {
+    "issues": "https://github.com/jtwebman/puid/issues",
+    "source": "https://github.com/jtwebman/puid"
+  }
+}

@@ -255,3 +255,65 @@ jobs:
           else
             echo "puid $LOCAL already on RubyGems; nothing to do."
           fi
+
+  php:
+    name: "jtwebman/puid (Packagist)"
+    runs-on: ubuntu-latest
+    env:
+      # PAT with contents:write on jtwebman/puid-php (the read-only split Packagist watches).
+      SPLIT_REPO_TOKEN: ${{ secrets.SPLIT_REPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history for `git subtree split`
+      - uses: actions/setup-node@v4 # for the dev server the SDK tests run against
+        with:
+          node-version: 24
+          cache: npm
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: curl, json
+          tools: composer
+
+      - run: npm ci
+      - name: Install composer deps
+        working-directory: sdks/php
+        run: composer install --no-interaction --no-progress
+
+      - name: Lint & static analysis
+        working-directory: sdks/php
+        run: |
+          vendor/bin/php-cs-fixer fix --dry-run --diff
+          vendor/bin/phpstan analyse
+
+      - name: Test against a real PUID server
+        run: |
+          printf 'ALLOW_DEV_LOGIN="1"\n' > .dev.vars
+          npm run dev:e2e > /tmp/puid-dev.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 && break
+            sleep 2
+          done
+          curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 || { echo "::error::dev server failed to start"; cat /tmp/puid-dev.log; exit 1; }
+          cd sdks/php && PUID_ENDPOINT=http://localhost:8799/api vendor/bin/phpunit
+
+      # Packagist doesn't support subdirectory packages, so we publish a read-only
+      # split of sdks/php to jtwebman/puid-php and tag it; Packagist indexes that repo.
+      - name: Split & tag puid-php if the version was bumped
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.SPLIT_REPO_TOKEN != ''
+        run: |
+          VERSION=$(tr -d '[:space:]' < sdks/php/VERSION)
+          TAG="v$VERSION"
+          REPO="https://x-access-token:${SPLIT_REPO_TOKEN}@github.com/jtwebman/puid-php.git"
+          if git ls-remote --exit-code --tags "$REPO" "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "$TAG already on puid-php; nothing to do."
+          else
+            echo "Splitting sdks/php → puid-php and tagging $TAG"
+            git config user.name "jtwebman"
+            git config user.email "jtwebman@gmail.com"
+            git subtree split --prefix=sdks/php -b php-split
+            git push --force "$REPO" php-split:main
+            git tag "$TAG" php-split
+            git push "$REPO" "refs/tags/$TAG"
+          fi
