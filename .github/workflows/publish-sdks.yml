@@ -208,3 +208,50 @@ jobs:
           else
             echo "$NAME $LOCAL already on crates.io; nothing to do."
           fi
+
+  ruby:
+    name: "puid (RubyGems)"
+    runs-on: ubuntu-latest
+    env:
+      GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4 # for the dev server the SDK tests run against
+        with:
+          node-version: 24
+          cache: npm
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - run: npm ci
+      - run: gem install rubocop -v 1.87.0 --no-document
+
+      - name: Lint & format-check the SDK
+        working-directory: sdks/ruby
+        run: rubocop
+
+      - name: Test against a real PUID server
+        run: |
+          printf 'ALLOW_DEV_LOGIN="1"\n' > .dev.vars
+          npm run dev:e2e > /tmp/puid-dev.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 && break
+            sleep 2
+          done
+          curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 || { echo "::error::dev server failed to start"; cat /tmp/puid-dev.log; exit 1; }
+          cd sdks/ruby && PUID_ENDPOINT=http://localhost:8799/api ruby -Ilib -Itest test/test_puid.rb
+
+      - name: Publish to RubyGems if the version was bumped
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.GEM_HOST_API_KEY != ''
+        working-directory: sdks/ruby
+        run: |
+          LOCAL=$(ruby -Ilib -e 'require "puid/version"; print Puid::VERSION')
+          REMOTE=$(curl -fsS "https://rubygems.org/api/v1/gems/puid.json" 2>/dev/null | ruby -rjson -e 'print JSON.parse(ARGF.read)["version"]' 2>/dev/null || echo "none")
+          if [ "$LOCAL" != "$REMOTE" ]; then
+            echo "Publishing puid $LOCAL (RubyGems has: $REMOTE)"
+            gem build puid.gemspec
+            gem push "puid-$LOCAL.gem"
+          else
+            echo "puid $LOCAL already on RubyGems; nothing to do."
+          fi

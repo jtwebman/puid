@@ -20,3 +20,8 @@ dist/
 # Rust (SDKs)
 target/
 Cargo.lock
+
+# Ruby (SDKs)
+*.gem
+.bundle/
+vendor/bundle/
