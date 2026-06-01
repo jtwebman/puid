@@ -266,6 +266,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # full history for `git subtree split`
+          # Don't persist the built-in bot token as a git extraheader — it would
+          # override the SPLIT_REPO_TOKEN in our push URL and 403 against puid-php.
+          persist-credentials: false
       - uses: actions/setup-node@v4 # for the dev server the SDK tests run against
         with:
           node-version: 24
