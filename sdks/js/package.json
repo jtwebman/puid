@@ -1,6 +1,6 @@
 {
   "name": "@puid-dev/client",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Official JavaScript/Node.js client for the PUID API — the Provably Unique IDentifier service.",
   "type": "module",
   "main": "index.js",
