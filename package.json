@@ -14,7 +14,6 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
     "test:e2e": "playwright test",
     "dev:e2e": "wrangler d1 execute puid --local --file=schema/d1.sql && vite dev --port 8799",
-    "gen:clients": "node tools/gen-clients.mjs",
     "gen:openapi": "node tools/gen-openapi.mjs"
   },
   "devDependencies": {

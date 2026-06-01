@@ -6,9 +6,10 @@
 //     "Try it out" works locally AND in production)
 //   - rendered as interactive docs at /docs (Swagger UI)
 //   - turned into openapi.yaml / openapi.json files (tools/gen-openapi.mjs)
-//   - used to generate all 20 SDKs (tools/gen-clients.mjs)
 //
-// Only the two real endpoints are documented: generate + ordinal.
+// The hand-written SDKs under sdks/<lang>/ are kept in sync with this spec by hand
+// (the surface is small: generate, ordinal, quota). Only the real endpoints are
+// documented: generate + ordinal + quota.
 
 export const DEFAULT_SITE = "https://puid.dev";
 

@@ -1,0 +1,53 @@
+name: Publish SDKs
+
+# Each SDK under sdks/<lang>/ is its own package with its own version and tests.
+# On every PR we test each SDK against a real (locally-booted) PUID server. On a
+# push to main, after the tests pass, we publish any SDK whose version was bumped
+# (i.e. differs from what's on its registry). Bump one folder's version → only
+# that package ships. Add a new SDK = add a job below.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  js:
+    name: "@puid-dev/client (npm)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      # Root install gives us the dev server (vite + wrangler) the SDK tests run against.
+      - run: npm ci
+
+      - name: Test against a real PUID server
+        run: |
+          printf 'ALLOW_DEV_LOGIN="1"\n' > .dev.vars
+          npm run dev:e2e > /tmp/puid-dev.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 && break
+            sleep 2
+          done
+          curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 || { echo "::error::dev server failed to start"; cat /tmp/puid-dev.log; exit 1; }
+          cd sdks/js && PUID_ENDPOINT=http://localhost:8799/api npm test
+
+      - name: Publish to npm if the version was bumped
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: sdks/js
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          LOCAL=$(node -p "require('./package.json').version")
+          REMOTE=$(npm view "$NAME" version 2>/dev/null || echo "none")
+          if [ "$LOCAL" != "$REMOTE" ]; then
+            echo "Publishing $NAME@$LOCAL (registry has: $REMOTE)"
+            npm publish
+          else
+            echo "$NAME@$LOCAL already published; nothing to do."
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

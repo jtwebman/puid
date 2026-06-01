@@ -1,0 +1,49 @@
+{
+  "name": "@puid-dev/client",
+  "version": "0.1.0",
+  "description": "Official JavaScript/Node.js client for the PUID API — the Provably Unique IDentifier service.",
+  "type": "module",
+  "main": "index.js",
+  "module": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "puid",
+    "uuid",
+    "unique-id",
+    "identifier",
+    "id-generator",
+    "api-client"
+  ],
+  "homepage": "https://puid.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jtwebman/puid.git",
+    "directory": "sdks/js"
+  },
+  "bugs": {
+    "url": "https://github.com/jtwebman/puid/issues"
+  },
+  "author": "jtwebman",
+  "license": "AGPL-3.0-only",
+  "publishConfig": {
+    "access": "public"
+  }
+}

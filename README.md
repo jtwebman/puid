@@ -51,8 +51,8 @@ src/
     +layout.svelte, +page.svelte (landing), docs/, dashboard/, upgrade/
 schema/d1.sql              relational schema (users, accounts, memberships, keys, tokens, sequence, usage_events)
 extension/postgres/        a `puid` column type whose DEFAULT calls this API on every INSERT
-tools/                     gen-openapi.mjs + gen-clients.mjs (generate openapi.{json,yaml} + 20 SDKs from the spec)
-clients/                   generated SDKs for 20 languages
+tools/                     gen-openapi.mjs (writes openapi.{json,yaml} from the spec)
+sdks/                      hand-written client libraries, one folder per language (each its own package + tests)
 e2e/                       Playwright API + browser tests
 ```
 
@@ -94,6 +94,9 @@ npm install
 npm run dev          # vite dev on :8799 (adapter emulates D1 + reads .dev.vars)
 npm test             # node unit proof: 2,000,000 ids, 0 collisions, roundtrip
 npm run test:e2e     # Playwright: API (request fixture) + browser flows, against vite dev
+
+# SDK suites run against a real server. With `npm run dev:e2e` up on :8799:
+cd sdks/js && PUID_ENDPOINT=http://localhost:8799/api npm test
 ```
 
 Local dev/tests use a `.dev.vars` flag `ALLOW_DEV_LOGIN=1` to enable `/auth/dev-login`, a test-only stand-in for Google/Microsoft sign-in (never set in production). To exercise the *real* OAuth flow locally, register `http://localhost:8799/auth/callback/{google,microsoft}` and fill the client id/secrets in `.dev.vars`.
@@ -121,13 +124,19 @@ npm run deploy                                       # vite build && wrangler de
 
 ## SDKs
 
-20 languages, generated from the spec (`node tools/gen-clients.mjs`): Python, Node, TypeScript, Go, Rust, Ruby, PHP, Java, Kotlin, Swift, C#, C, C++, Bash, Perl, Elixir, Scala, Dart, R, Lua. All read `PUID_API_KEY` from the environment.
+Hand-written client libraries live under [`sdks/`](sdks/) — one folder per language, each a real
+package for its ecosystem with its own README, version, and test suite. Every client supports both
+auth modes (a team API key **or** an OAuth2 bearer token for generating ids on another account's
+behalf) and a configurable `endpoint` (default `https://puid.dev/api`; point it at a local server
+for tests or at your own domain for a self-hosted Enterprise PUID). Each ships independently — bump
+the version in its folder and CI tests and publishes just that package.
 
-```python
-import puid                       # clients/python/puid.py
-ids = puid.generate(3)
-print(ids[0], "was secretly #", puid.ordinal(ids[0]))
-```
+| Language | Package | Docs |
+|---|---|---|
+| JavaScript / Node.js | [`@puid-dev/client`](sdks/js) (npm) | [sdks/js/README.md](sdks/js/README.md) |
+
+_More languages are being added one folder at a time (Python, Go, Rust, Ruby, PHP, Java, …), each
+hand-written and tested against the real service._
 
 ## License
 
