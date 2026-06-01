@@ -21,6 +21,7 @@ export async function handle({ event, resolve }) {
     transformPageChunk: ({ html }) =>
       html.replace("%lang%", locale).replace("%dir%", LOCALES[locale]?.dir || "ltr"),
   });
-  if (persist) res.headers.append("set-cookie", `lang=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`);
+  if (persist)
+    res.headers.append("set-cookie", `lang=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`);
   return res;
 }

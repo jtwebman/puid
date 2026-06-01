@@ -10,5 +10,11 @@ export function load({ locals, platform }) {
   // Which social-login providers actually have credentials configured, so the
   // UI only shows buttons that work.
   const providers = { google: !!env.GOOGLE_CLIENT_ID, microsoft: !!env.MICROSOFT_CLIENT_ID };
-  return { locale, dir: LOCALES[locale]?.dir || "ltr", m: messagesFor(locale), locales: LOCALES, providers };
+  return {
+    locale,
+    dir: LOCALES[locale]?.dir || "ltr",
+    m: messagesFor(locale),
+    locales: LOCALES,
+    providers,
+  };
 }

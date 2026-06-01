@@ -1,7 +1,32 @@
 {
   "name": "@puid-dev/client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Official JavaScript/Node.js client for the PUID API — the Provably Unique IDentifier service.",
+  "keywords": [
+    "api-client",
+    "id-generator",
+    "identifier",
+    "puid",
+    "unique-id",
+    "uuid"
+  ],
+  "homepage": "https://puid.dev",
+  "bugs": {
+    "url": "https://github.com/jtwebman/puid/issues"
+  },
+  "license": "AGPL-3.0-only",
+  "author": "jtwebman",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jtwebman/puid.git",
+    "directory": "sdks/js"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
   "type": "module",
   "main": "index.js",
   "module": "index.js",
@@ -12,38 +37,16 @@
       "import": "./index.js"
     }
   },
-  "files": [
-    "index.js",
-    "index.d.ts",
-    "README.md",
-    "LICENSE"
-  ],
-  "engines": {
-    "node": ">=18"
-  },
-  "scripts": {
-    "test": "node --test"
-  },
-  "keywords": [
-    "puid",
-    "uuid",
-    "unique-id",
-    "identifier",
-    "id-generator",
-    "api-client"
-  ],
-  "homepage": "https://puid.dev",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/jtwebman/puid.git",
-    "directory": "sdks/js"
-  },
-  "bugs": {
-    "url": "https://github.com/jtwebman/puid/issues"
-  },
-  "author": "jtwebman",
-  "license": "AGPL-3.0-only",
   "publishConfig": {
     "access": "public"
+  },
+  "scripts": {
+    "test": "node --test",
+    "lint": "oxlint --deny-warnings",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

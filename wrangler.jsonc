@@ -6,7 +6,7 @@
   "main": ".svelte-kit/cloudflare/_worker.js",
   "assets": {
     "binding": "ASSETS",
-    "directory": ".svelte-kit/cloudflare"
+    "directory": ".svelte-kit/cloudflare",
   },
   "observability": { "enabled": true },
   "workers_dev": true,
@@ -16,12 +16,12 @@
     {
       "binding": "DB",
       "database_name": "puid",
-      "database_id": "27ea4869-12d7-420e-a3cd-5f0962f7df91"
-    }
+      "database_id": "27ea4869-12d7-420e-a3cd-5f0962f7df91",
+    },
   ],
 
   // Serve the Worker at the apex domain (puid.dev is live on Cloudflare).
-  "routes": [{ "pattern": "puid.dev", "custom_domain": true }]
+  "routes": [{ "pattern": "puid.dev", "custom_domain": true }],
 
   // Inbound social-login secrets (wrangler secret put):
   //   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET

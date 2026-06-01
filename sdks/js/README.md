@@ -22,9 +22,9 @@ import { Puid } from "@puid-dev/client";
 const puid = new Puid({ apiKey: process.env.PUID_API_KEY }); // puid_live_…
 
 const id = await puid.id();
-const ids = await puid.ids(5);          // 1–10 per request
+const ids = await puid.ids(5); // 1–10 per request
 const ordinal = await puid.ordinal(id); // bigint — the counter it encodes
-const quota = await puid.quota();        // { plan, used, limit, remaining }
+const quota = await puid.quota(); // { plan, used, limit, remaining }
 ```
 
 Mint an API key in the [dashboard](https://puid.dev/dashboard) after signing in.
@@ -58,12 +58,12 @@ const puid = new Puid({ accessToken: "puid_at_…" });
 
 ### `new Puid(options)`
 
-| option        | type     | description                                              |
-| ------------- | -------- | -------------------------------------------------------- |
-| `apiKey`      | string   | A team API key (`puid_live_…`). Mutually exclusive with `accessToken`. |
-| `accessToken` | string   | An OAuth2 bearer token (`puid_at_…`).                    |
+| option        | type     | description                                                                                                                                            |
+| ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apiKey`      | string   | A team API key (`puid_live_…`). Mutually exclusive with `accessToken`.                                                                                 |
+| `accessToken` | string   | An OAuth2 bearer token (`puid_at_…`).                                                                                                                  |
 | `endpoint`    | string   | API endpoint. Defaults to `https://puid.dev/api`. Point it at a local dev server for tests, or at your own domain for a self-hosted (Enterprise) PUID. |
-| `fetch`       | function | A `fetch` implementation. Defaults to the global `fetch`. |
+| `fetch`       | function | A `fetch` implementation. Defaults to the global `fetch`.                                                                                              |
 
 ### Self-hosted / Enterprise
 
@@ -93,7 +93,7 @@ try {
 } catch (err) {
   if (err instanceof PuidError) {
     err.status; // 401 | 402 | 429 | … (null for client-side/network errors)
-    err.code;   // "rate_limited" | "quota_exceeded" | "unauthorized" | "network_error" | …
+    err.code; // "rate_limited" | "quota_exceeded" | "unauthorized" | "network_error" | …
   }
 }
 ```

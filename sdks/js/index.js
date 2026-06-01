@@ -35,7 +35,9 @@ export class PuidError extends Error {
 function resolveFetch(injected) {
   const f = injected || globalThis.fetch;
   if (typeof f !== "function") {
-    throw new PuidError("No fetch available. Use Node 18+, or pass a `fetch` implementation in the options.");
+    throw new PuidError(
+      "No fetch available. Use Node 18+, or pass a `fetch` implementation in the options.",
+    );
   }
   return f;
 }
@@ -77,7 +79,9 @@ export class Puid {
         headers: { ...this.#authHeader, accept: "application/json" },
       });
     } catch (cause) {
-      throw new PuidError(`Network request to PUID failed: ${cause?.message || cause}`, { code: "network_error" });
+      throw new PuidError(`Network request to PUID failed: ${cause?.message || cause}`, {
+        code: "network_error",
+      });
     }
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -147,9 +151,17 @@ export class Puid {
    * @returns {Promise<Puid>}
    */
   static async fromClientCredentials(options = {}) {
-    const { clientId, clientSecret, scope = "puid:generate", endpoint = DEFAULT_ENDPOINT, fetch: injectedFetch } = options;
+    const {
+      clientId,
+      clientSecret,
+      scope = "puid:generate",
+      endpoint = DEFAULT_ENDPOINT,
+      fetch: injectedFetch,
+    } = options;
     if (!clientId || !clientSecret) {
-      throw new PuidError("`clientId` and `clientSecret` are required.", { code: "invalid_client" });
+      throw new PuidError("`clientId` and `clientSecret` are required.", {
+        code: "invalid_client",
+      });
     }
     const doFetch = resolveFetch(injectedFetch);
     const base = String(endpoint).replace(/\/+$/, "");
@@ -157,7 +169,10 @@ export class Puid {
     try {
       res = await doFetch(base + "/oauth/token", {
         method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          accept: "application/json",
+        },
         body: new URLSearchParams({
           grant_type: "client_credentials",
           client_id: clientId,
@@ -166,14 +181,19 @@ export class Puid {
         }),
       });
     } catch (cause) {
-      throw new PuidError(`Token request to PUID failed: ${cause?.message || cause}`, { code: "network_error" });
+      throw new PuidError(`Token request to PUID failed: ${cause?.message || cause}`, {
+        code: "network_error",
+      });
     }
     const body = await res.json().catch(() => ({}));
     if (!res.ok || !body.access_token) {
-      throw new PuidError(body.error_description || body.error || `Token request failed with HTTP ${res.status}.`, {
-        status: res.status,
-        code: body.error || null,
-      });
+      throw new PuidError(
+        body.error_description || body.error || `Token request failed with HTTP ${res.status}.`,
+        {
+          status: res.status,
+          code: body.error || null,
+        },
+      );
     }
     return new Puid({ accessToken: body.access_token, endpoint, fetch: injectedFetch });
   }

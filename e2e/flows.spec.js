@@ -26,7 +26,9 @@ test("dark mode toggle adds the .dark class", async ({ page }) => {
   await expect(page.locator("html")).not.toHaveClass(/dark/);
 });
 
-test("server renders Spanish for ?lang=es (Accept-Language / dropdown drive this)", async ({ page }) => {
+test("server renders Spanish for ?lang=es (Accept-Language / dropdown drive this)", async ({
+  page,
+}) => {
   await page.goto("/?lang=es");
   await expect(page.locator("body")).toContainText("Precios"); // pricing → es
 });
@@ -65,7 +67,9 @@ test("create a second account", async ({ page }) => {
   await expect(page.getByTestId("account-select").locator("option")).toHaveCount(2);
 });
 
-test("join code: generate, second user joins, rotate kills old, revoke disables", async ({ browser, baseURL }) => {
+test("join code: generate, second user joins, rotate kills old, revoke disables", async ({
+  browser,
+}) => {
   const ownerCtx = await browser.newContext();
   const owner = await ownerCtx.newPage();
   await devLogin(owner, `host-${uniq()}@example.com`);
@@ -88,5 +92,7 @@ test("join code: generate, second user joins, rotate kills old, revoke disables"
 
   await owner.getByTestId("revoke-btn").click();
   await expect(owner.getByTestId("generate-btn")).toBeVisible(); // back to "no code"
-  await ownerCtx.close(); await bobCtx.close(); await lateCtx.close();
+  await ownerCtx.close();
+  await bobCtx.close();
+  await lateCtx.close();
 });

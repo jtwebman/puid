@@ -23,15 +23,22 @@ const uniqEmail = (tag) => `${tag}-${Date.now()}-${Math.floor(Math.random() * 1e
 // ALLOW_DEV_LOGIN) stands in for a completed Google sign-in, giving us a session
 // cookie we can use against the dashboard API to mint keys and seed usage.
 async function devSession(email) {
-  const res = await fetch(`${ORIGIN}/auth/dev-login?email=${encodeURIComponent(email)}&next=/dashboard`, {
-    redirect: "manual",
-  });
-  const setCookies = res.headers.getSetCookie?.() ?? [res.headers.get("set-cookie")].filter(Boolean);
+  const res = await fetch(
+    `${ORIGIN}/auth/dev-login?email=${encodeURIComponent(email)}&next=/dashboard`,
+    {
+      redirect: "manual",
+    },
+  );
+  const setCookies =
+    res.headers.getSetCookie?.() ?? [res.headers.get("set-cookie")].filter(Boolean);
   const cookie = setCookies.map((c) => c.split(";")[0]).join("; ");
-  if (!cookie) throw new Error("dev-login returned no session cookie — is ALLOW_DEV_LOGIN=1 set on the server?");
+  if (!cookie)
+    throw new Error(
+      "dev-login returned no session cookie — is ALLOW_DEV_LOGIN=1 set on the server?",
+    );
 
   const req = (path, opts = {}) =>
-    fetch(`${ORIGIN}${path}`, { ...opts, headers: { cookie, ...(opts.headers || {}) } });
+    fetch(`${ORIGIN}${path}`, { ...opts, headers: { cookie, ...opts.headers } });
 
   return {
     async mintKey(label = "sdk-test") {
@@ -128,12 +135,15 @@ test("quota() reports plan and remaining without spending an id", async () => {
 
 test("a bad API key yields a 401 PuidError", async () => {
   const puid = new Puid({ apiKey: "puid_live_definitely_not_real", endpoint: ENDPOINT });
-  await assert.rejects(() => puid.id(), (e) => {
-    assert.ok(e instanceof PuidError);
-    assert.equal(e.status, 401);
-    assert.equal(e.code, "unauthorized");
-    return true;
-  });
+  await assert.rejects(
+    () => puid.id(),
+    (e) => {
+      assert.ok(e instanceof PuidError);
+      assert.equal(e.status, 401);
+      assert.equal(e.code, "unauthorized");
+      return true;
+    },
+  );
 });
 
 test("exceeding the daily quota yields a 402 PuidError", async () => {
@@ -141,23 +151,29 @@ test("exceeding the daily quota yields a 402 PuidError", async () => {
   await session.seedUsage(1000); // free plan = 1000/day
   const key = await session.mintKey();
   const puid = new Puid({ apiKey: key, endpoint: ENDPOINT });
-  await assert.rejects(() => puid.id(), (e) => {
-    assert.ok(e instanceof PuidError);
-    assert.equal(e.status, 402);
-    return true;
-  });
+  await assert.rejects(
+    () => puid.id(),
+    (e) => {
+      assert.ok(e instanceof PuidError);
+      assert.equal(e.status, 402);
+      return true;
+    },
+  );
 });
 
 test("more than one request per second yields a 429 PuidError", async () => {
   const key = await (await devSession(uniqEmail("rate"))).mintKey();
   const puid = new Puid({ apiKey: key, endpoint: ENDPOINT });
   await puid.id(); // first request: allowed
-  await assert.rejects(() => puid.id(), (e) => {
-    assert.ok(e instanceof PuidError);
-    assert.equal(e.status, 429);
-    assert.equal(e.code, "rate_limited");
-    return true;
-  });
+  await assert.rejects(
+    () => puid.id(),
+    (e) => {
+      assert.ok(e instanceof PuidError);
+      assert.equal(e.status, 429);
+      assert.equal(e.code, "rate_limited");
+      return true;
+    },
+  );
 });
 
 // --- real service: OAuth2 (generate on someone else's behalf) ---------------
@@ -175,7 +191,8 @@ test("fromClientCredentials() mints a bearer token and generates ids", async () 
 
 test("fromClientCredentials() rejects bad credentials with a PuidError", async () => {
   await assert.rejects(
-    () => Puid.fromClientCredentials({ clientId: "nope", clientSecret: "wrong", endpoint: ENDPOINT }),
+    () =>
+      Puid.fromClientCredentials({ clientId: "nope", clientSecret: "wrong", endpoint: ENDPOINT }),
     (e) => e instanceof PuidError && e.status >= 400,
   );
 });
@@ -194,18 +211,30 @@ test("constructor requires exactly one credential", () => {
 test("ids() validates the range before making a request", async () => {
   const puid = new Puid({ apiKey: "k", endpoint: ENDPOINT });
   for (const bad of [0, 11, 1.5, -3, Number.NaN]) {
-    await assert.rejects(() => puid.ids(bad), (e) => e instanceof PuidError && e.code === "invalid_count");
+    await assert.rejects(
+      () => puid.ids(bad),
+      (e) => e instanceof PuidError && e.code === "invalid_count",
+    );
   }
 });
 
 test("ordinal() validates its argument before making a request", async () => {
   const puid = new Puid({ apiKey: "k", endpoint: ENDPOINT });
-  await assert.rejects(() => puid.ordinal(""), (e) => e instanceof PuidError && e.code === "invalid_puid");
-  await assert.rejects(() => puid.ordinal(null), (e) => e instanceof PuidError && e.code === "invalid_puid");
+  await assert.rejects(
+    () => puid.ordinal(""),
+    (e) => e instanceof PuidError && e.code === "invalid_puid",
+  );
+  await assert.rejects(
+    () => puid.ordinal(null),
+    (e) => e instanceof PuidError && e.code === "invalid_puid",
+  );
 });
 
 test("fromClientCredentials() requires clientId and clientSecret", async () => {
-  await assert.rejects(() => Puid.fromClientCredentials({ clientId: "only", endpoint: ENDPOINT }), /required/);
+  await assert.rejects(
+    () => Puid.fromClientCredentials({ clientId: "only", endpoint: ENDPOINT }),
+    /required/,
+  );
 });
 
 // --- the two cases a live endpoint can't produce ----------------------------
@@ -219,20 +248,26 @@ test("a non-JSON error body still yields a useful PuidError (faked: the API alwa
     },
   });
   const puid = new Puid({ apiKey: "k", endpoint: ENDPOINT, fetch: fakeFetch });
-  await assert.rejects(() => puid.id(), (e) => {
-    assert.ok(e instanceof PuidError);
-    assert.equal(e.status, 502);
-    assert.equal(e.code, null);
-    assert.match(e.message, /HTTP 502/);
-    return true;
-  });
+  await assert.rejects(
+    () => puid.id(),
+    (e) => {
+      assert.ok(e instanceof PuidError);
+      assert.equal(e.status, 502);
+      assert.equal(e.code, null);
+      assert.match(e.message, /HTTP 502/);
+      return true;
+    },
+  );
 });
 
 test("a transport failure becomes a PuidError with code network_error (real: closed port)", async () => {
   const puid = new Puid({ apiKey: "k", endpoint: "http://127.0.0.1:1/api" });
-  await assert.rejects(() => puid.id(), (e) => {
-    assert.ok(e instanceof PuidError);
-    assert.equal(e.code, "network_error");
-    return true;
-  });
+  await assert.rejects(
+    () => puid.id(),
+    (e) => {
+      assert.ok(e instanceof PuidError);
+      assert.equal(e.code, "network_error");
+      return true;
+    },
+  );
 });

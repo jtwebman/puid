@@ -17,7 +17,9 @@ jobs:
           cache: npm
 
       - run: npm ci
-      - run: npm run check
+      - run: npm run lint # oxlint (fails on warnings)
+      - run: npm run format:check # oxfmt --check
+      - run: npm run check # svelte-check (types + typed-i18n key guard)
       - run: npm test # node unit proof: 2,000,000 ids, 0 collisions
 
       # e2e: Playwright boots its own dev server (npm run dev:e2e), which needs

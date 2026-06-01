@@ -1,20 +1,27 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 /* Class-based dark mode, matching slowbreath/onyourfeet. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Zinc-based theme tokens (kept as a small set for non-utility spots). */
 :root {
-	--accent: #4f46e5;
+  --accent: #4f46e5;
 }
 :where(.dark) {
-	--accent: #818cf8;
+  --accent: #818cf8;
 }
 
 html {
-	font-family:
-		ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
 }
 body {
-	@apply bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+  @apply bg-white text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
 }

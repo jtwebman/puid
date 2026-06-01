@@ -22,8 +22,15 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
-      # Root install gives us the dev server (vite + wrangler) the SDK tests run against.
+      # Root install gives us the dev server (vite + wrangler) the SDK tests run
+      # against, plus oxlint/oxfmt on PATH for the SDK's own lint/format scripts.
       - run: npm ci
+
+      - name: Lint & format-check the SDK
+        working-directory: sdks/js
+        run: |
+          npm run lint
+          npm run format:check
 
       - name: Test against a real PUID server
         run: |
