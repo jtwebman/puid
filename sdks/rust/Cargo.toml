@@ -1,0 +1,27 @@
+[package]
+name = "puid-client"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.70"
+description = "Official Rust client for the PUID API — the Provably Unique IDentifier service."
+license = "AGPL-3.0-only"
+repository = "https://github.com/jtwebman/puid"
+homepage = "https://puid.dev"
+documentation = "https://docs.rs/puid-client"
+readme = "README.md"
+keywords = ["puid", "uuid", "identifier", "api-client", "id-generator"]
+categories = ["api-bindings"]
+
+[lib]
+name = "puid"
+path = "src/lib.rs"
+
+[dependencies]
+ureq = { version = "2", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+# `cookies` lets the test bootstrap hold a dev-login session to mint keys.
+ureq = { version = "2", features = ["json", "cookies"] }
+serde_json = "1"

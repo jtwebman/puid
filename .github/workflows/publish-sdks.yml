@@ -163,3 +163,48 @@ jobs:
             # nudge the Go module proxy so pkg.go.dev indexes the new version
             curl -fsS "https://proxy.golang.org/github.com/jtwebman/puid/sdks/go/@v/v$VERSION.info" || true
           fi
+
+  rust:
+    name: "puid-client (crates.io)"
+    runs-on: ubuntu-latest
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4 # for the dev server the SDK tests run against
+        with:
+          node-version: 24
+          cache: npm
+      - run: rustup component add rustfmt clippy
+      - run: npm ci
+
+      - name: Lint & format-check the SDK
+        working-directory: sdks/rust
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+
+      - name: Test against a real PUID server
+        run: |
+          printf 'ALLOW_DEV_LOGIN="1"\n' > .dev.vars
+          npm run dev:e2e > /tmp/puid-dev.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 && break
+            sleep 2
+          done
+          curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 || { echo "::error::dev server failed to start"; cat /tmp/puid-dev.log; exit 1; }
+          cd sdks/rust && PUID_ENDPOINT=http://localhost:8799/api cargo test
+
+      - name: Publish to crates.io if the version was bumped
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.CARGO_REGISTRY_TOKEN != ''
+        working-directory: sdks/rust
+        run: |
+          NAME=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].name')
+          LOCAL=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          REMOTE=$(curl -fsS -A "puid-ci (jtwebman@gmail.com)" "https://crates.io/api/v1/crates/$NAME" 2>/dev/null | jq -r '.crate.max_version' 2>/dev/null || echo "none")
+          if [ "$LOCAL" != "$REMOTE" ]; then
+            echo "Publishing $NAME $LOCAL (crates.io has: $REMOTE)"
+            cargo publish
+          else
+            echo "$NAME $LOCAL already on crates.io; nothing to do."
+          fi

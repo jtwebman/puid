@@ -16,3 +16,7 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 dist/
+
+# Rust (SDKs)
+target/
+Cargo.lock
