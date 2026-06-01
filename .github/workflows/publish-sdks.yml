@@ -58,3 +58,55 @@ jobs:
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  python:
+    name: "puid-client (PyPI)"
+    runs-on: ubuntu-latest
+    # Mapped here so the publish step can skip cleanly until the secret is set.
+    env:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4 # for the dev server the SDK tests run against
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: npm ci
+      - run: pip install ruff pytest build twine
+      - run: pip install -e ./sdks/python
+
+      - name: Lint & format-check the SDK
+        working-directory: sdks/python
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Test against a real PUID server
+        run: |
+          printf 'ALLOW_DEV_LOGIN="1"\n' > .dev.vars
+          npm run dev:e2e > /tmp/puid-dev.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 && break
+            sleep 2
+          done
+          curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 || { echo "::error::dev server failed to start"; cat /tmp/puid-dev.log; exit 1; }
+          cd sdks/python && PUID_ENDPOINT=http://localhost:8799/api pytest
+
+      - name: Publish to PyPI if the version was bumped
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.PYPI_API_TOKEN != ''
+        working-directory: sdks/python
+        run: |
+          NAME=$(python -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['name'])")
+          LOCAL=$(python -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          REMOTE=$(curl -fsS "https://pypi.org/pypi/$NAME/json" 2>/dev/null | python -c "import sys,json;print(json.load(sys.stdin)['info']['version'])" 2>/dev/null || echo "none")
+          if [ "$LOCAL" != "$REMOTE" ]; then
+            echo "Publishing $NAME $LOCAL (PyPI has: $REMOTE)"
+            python -m build
+            TWINE_USERNAME=__token__ TWINE_PASSWORD="$PYPI_API_TOKEN" twine upload dist/*
+          else
+            echo "$NAME $LOCAL already on PyPI; nothing to do."
+          fi

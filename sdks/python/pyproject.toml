@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "puid-client"
+version = "1.0.0"
+description = "Official Python client for the PUID API — the Provably Unique IDentifier service."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
+authors = [{ name = "jtwebman" }]
+keywords = ["puid", "uuid", "unique-id", "identifier", "id-generator", "api-client"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: GNU Affero General Public License v3",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Libraries",
+]
+# Zero runtime dependencies — built on the standard library (urllib).
+dependencies = []
+
+[project.urls]
+Homepage = "https://puid.dev"
+Repository = "https://github.com/jtwebman/puid"
+Issues = "https://github.com/jtwebman/puid/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["puid"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+# pyflakes, pycodestyle, isort, pyupgrade, bugbear — fail on any of these.
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
