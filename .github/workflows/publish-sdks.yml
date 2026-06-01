@@ -320,3 +320,58 @@ jobs:
             git tag "$TAG" php-split
             git push "$REPO" "refs/tags/$TAG"
           fi
+
+  java:
+    name: "dev.puid:puid-client (Maven Central)"
+    runs-on: ubuntu-latest
+    env:
+      MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+      MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+      SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+      SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4 # for the dev server the SDK tests run against
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - run: npm ci
+
+      - name: Format check
+        working-directory: sdks/java
+        run: mvn -B spotless:check
+
+      - name: Test against a real PUID server
+        run: |
+          printf 'ALLOW_DEV_LOGIN="1"\n' > .dev.vars
+          npx wrangler d1 execute puid --local --file=schema/d1.sql
+          # Bind IPv4 explicitly — the JDK HttpClient is picky about localhost/::1.
+          npx vite dev --host 127.0.0.1 --port 8799 > /tmp/puid-dev.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8799/api/openapi.json >/dev/null 2>&1 && break
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8799/api/openapi.json >/dev/null 2>&1 || { echo "::error::dev server failed to start"; cat /tmp/puid-dev.log; exit 1; }
+          cd sdks/java && PUID_ENDPOINT=http://127.0.0.1:8799/api mvn -B test
+
+      - name: Publish to Maven Central if the version was bumped
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.MAVEN_CENTRAL_USERNAME != ''
+        working-directory: sdks/java
+        run: |
+          VERSION=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)
+          if curl -fsS "https://repo1.maven.org/maven2/dev/puid/puid-client/$VERSION/" >/dev/null 2>&1; then
+            echo "dev.puid:puid-client $VERSION already on Maven Central; nothing to do."
+          else
+            echo "Publishing dev.puid:puid-client $VERSION"
+            printf '%s' "$SIGNING_KEY" | gpg --batch --import
+            mkdir -p ~/.m2
+            printf '<settings><servers><server><id>central</id><username>%s</username><password>%s</password></server></servers></settings>' \
+              "$MAVEN_CENTRAL_USERNAME" "$MAVEN_CENTRAL_PASSWORD" > ~/.m2/settings.xml
+            mvn -B -Prelease -DskipTests deploy -Dgpg.passphrase="$SIGNING_PASSWORD"
+          fi

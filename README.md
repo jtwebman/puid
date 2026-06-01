@@ -102,6 +102,7 @@ cd sdks/go && PUID_ENDPOINT=http://localhost:8799/api go test ./...
 cd sdks/rust && PUID_ENDPOINT=http://localhost:8799/api cargo test
 cd sdks/ruby && PUID_ENDPOINT=http://localhost:8799/api ruby -Ilib -Itest test/test_puid.rb
 cd sdks/php && composer install && PUID_ENDPOINT=http://localhost:8799/api vendor/bin/phpunit
+cd sdks/java && PUID_ENDPOINT=http://127.0.0.1:8799/api mvn test
 ```
 
 Local dev/tests use a `.dev.vars` flag `ALLOW_DEV_LOGIN=1` to enable `/auth/dev-login`, a test-only stand-in for Google/Microsoft sign-in (never set in production). To exercise the _real_ OAuth flow locally, register `http://localhost:8799/auth/callback/{google,microsoft}` and fill the client id/secrets in `.dev.vars`.
@@ -136,17 +137,18 @@ behalf) and a configurable `endpoint` (default `https://puid.dev/api`; point it 
 for tests or at your own domain for a self-hosted Enterprise PUID). Each ships independently — bump
 the version in its folder and CI tests and publishes just that package.
 
-| Language             | Package                                                    | Docs                                           |
-| -------------------- | ---------------------------------------------------------- | ---------------------------------------------- |
-| JavaScript / Node.js | [`@puid-dev/client`](sdks/js) (npm)                        | [sdks/js/README.md](sdks/js/README.md)         |
-| Python               | [`puid-client`](sdks/python) (PyPI)                        | [sdks/python/README.md](sdks/python/README.md) |
-| Go                   | [`github.com/jtwebman/puid/sdks/go`](sdks/go) (Go modules) | [sdks/go/README.md](sdks/go/README.md)         |
-| Rust                 | [`puid-client`](sdks/rust) (crates.io)                     | [sdks/rust/README.md](sdks/rust/README.md)     |
-| Ruby                 | [`puid`](sdks/ruby) (RubyGems)                             | [sdks/ruby/README.md](sdks/ruby/README.md)     |
-| PHP                  | [`jtwebman/puid`](sdks/php) (Packagist)                    | [sdks/php/README.md](sdks/php/README.md)       |
+| Language              | Package                                                    | Docs                                           |
+| --------------------- | ---------------------------------------------------------- | ---------------------------------------------- |
+| JavaScript / Node.js  | [`@puid-dev/client`](sdks/js) (npm)                        | [sdks/js/README.md](sdks/js/README.md)         |
+| Python                | [`puid-client`](sdks/python) (PyPI)                        | [sdks/python/README.md](sdks/python/README.md) |
+| Go                    | [`github.com/jtwebman/puid/sdks/go`](sdks/go) (Go modules) | [sdks/go/README.md](sdks/go/README.md)         |
+| Rust                  | [`puid-client`](sdks/rust) (crates.io)                     | [sdks/rust/README.md](sdks/rust/README.md)     |
+| Ruby                  | [`puid`](sdks/ruby) (RubyGems)                             | [sdks/ruby/README.md](sdks/ruby/README.md)     |
+| PHP                   | [`jtwebman/puid`](sdks/php) (Packagist)                    | [sdks/php/README.md](sdks/php/README.md)       |
+| Java / Kotlin / Scala | [`dev.puid:puid-client`](sdks/java) (Maven Central)        | [sdks/java/README.md](sdks/java/README.md)     |
 
-_More languages are being added one folder at a time (Java, …), each
-hand-written and tested against the real service._
+_More languages are being added one folder at a time (C#, Erlang, Elixir, Haskell, Perl, …),
+each hand-written and tested against the real service._
 
 ## License
 

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>dev.puid</groupId>
+  <artifactId>puid-client</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+
+  <name>puid-client</name>
+  <description>Official JVM client for the PUID API — the Provably Unique IDentifier service. Usable from Java, Kotlin, and Scala.</description>
+  <url>https://puid.dev</url>
+
+  <licenses>
+    <license>
+      <name>AGPL-3.0-only</name>
+      <url>https://www.gnu.org/licenses/agpl-3.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>jtwebman</id>
+      <name>jtwebman</name>
+      <url>https://github.com/jtwebman</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/jtwebman/puid.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/jtwebman/puid.git</developerConnection>
+    <url>https://github.com/jtwebman/puid</url>
+  </scm>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>11</maven.compiler.release>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.11.4</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.2</version>
+      </plugin>
+      <!-- Format + style gate: `mvn spotless:check` / `spotless:apply`. -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.44.0</version>
+        <configuration>
+          <java>
+            <googleJavaFormat>
+              <version>1.25.2</version>
+            </googleJavaFormat>
+            <removeUnusedImports/>
+            <importOrder/>
+          </java>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!-- `mvn -Prelease deploy` builds sources+javadoc, GPG-signs everything, and
+       uploads to the Sonatype Central Portal. Plain `mvn test` needs none of this. -->
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.3.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals><goal>jar-no-fork</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.11.2</version>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals><goal>jar</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.7</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals><goal>sign</goal></goals>
+                <configuration>
+                  <gpgArguments>
+                    <arg>--pinentry-mode</arg>
+                    <arg>loopback</arg>
+                  </gpgArguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.7.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
+              <waitUntil>published</waitUntil>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
