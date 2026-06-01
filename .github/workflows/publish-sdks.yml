@@ -110,3 +110,56 @@ jobs:
           else
             echo "$NAME $LOCAL already on PyPI; nothing to do."
           fi
+
+  go:
+    name: "puid (Go module)"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to push the release tag
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so we can push a new tag
+      - uses: actions/setup-node@v4 # for the dev server the SDK tests run against
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: sdks/go/go.mod
+
+      - run: npm ci
+      - run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Lint & format-check the SDK
+        working-directory: sdks/go
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then echo "::error::gofmt: these files need formatting:"; gofmt -l .; exit 1; fi
+          go vet ./...
+          "$(go env GOPATH)/bin/staticcheck" ./...
+
+      - name: Test against a real PUID server
+        run: |
+          printf 'ALLOW_DEV_LOGIN="1"\n' > .dev.vars
+          npm run dev:e2e > /tmp/puid-dev.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 && break
+            sleep 2
+          done
+          curl -fsS http://localhost:8799/api/openapi.json >/dev/null 2>&1 || { echo "::error::dev server failed to start"; cat /tmp/puid-dev.log; exit 1; }
+          cd sdks/go && PUID_ENDPOINT=http://localhost:8799/api go test ./...
+
+      - name: Tag the release if the version was bumped
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          VERSION=$(tr -d '[:space:]' < sdks/go/VERSION)
+          TAG="sdks/go/v$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "$TAG already exists; nothing to do."
+          else
+            echo "Tagging $TAG (publishes github.com/jtwebman/puid/sdks/go@v$VERSION)"
+            git tag "$TAG"
+            git push origin "$TAG"
+            # nudge the Go module proxy so pkg.go.dev indexes the new version
+            curl -fsS "https://proxy.golang.org/github.com/jtwebman/puid/sdks/go/@v/v$VERSION.info" || true
+          fi

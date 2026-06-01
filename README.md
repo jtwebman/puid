@@ -98,6 +98,7 @@ npm run test:e2e     # Playwright: API (request fixture) + browser flows, agains
 # SDK suites run against a real server. With `npm run dev:e2e` up on :8799:
 cd sdks/js && PUID_ENDPOINT=http://localhost:8799/api npm test
 cd sdks/python && PUID_ENDPOINT=http://localhost:8799/api pytest
+cd sdks/go && PUID_ENDPOINT=http://localhost:8799/api go test ./...
 ```
 
 Local dev/tests use a `.dev.vars` flag `ALLOW_DEV_LOGIN=1` to enable `/auth/dev-login`, a test-only stand-in for Google/Microsoft sign-in (never set in production). To exercise the _real_ OAuth flow locally, register `http://localhost:8799/auth/callback/{google,microsoft}` and fill the client id/secrets in `.dev.vars`.
@@ -132,12 +133,13 @@ behalf) and a configurable `endpoint` (default `https://puid.dev/api`; point it 
 for tests or at your own domain for a self-hosted Enterprise PUID). Each ships independently — bump
 the version in its folder and CI tests and publishes just that package.
 
-| Language             | Package                             | Docs                                           |
-| -------------------- | ----------------------------------- | ---------------------------------------------- |
-| JavaScript / Node.js | [`@puid-dev/client`](sdks/js) (npm) | [sdks/js/README.md](sdks/js/README.md)         |
-| Python               | [`puid-client`](sdks/python) (PyPI) | [sdks/python/README.md](sdks/python/README.md) |
+| Language             | Package                                                    | Docs                                           |
+| -------------------- | ---------------------------------------------------------- | ---------------------------------------------- |
+| JavaScript / Node.js | [`@puid-dev/client`](sdks/js) (npm)                        | [sdks/js/README.md](sdks/js/README.md)         |
+| Python               | [`puid-client`](sdks/python) (PyPI)                        | [sdks/python/README.md](sdks/python/README.md) |
+| Go                   | [`github.com/jtwebman/puid/sdks/go`](sdks/go) (Go modules) | [sdks/go/README.md](sdks/go/README.md)         |
 
-_More languages are being added one folder at a time (Go, Rust, Ruby, PHP, Java, …), each
+_More languages are being added one folder at a time (Rust, Ruby, PHP, Java, …), each
 hand-written and tested against the real service._
 
 ## License
